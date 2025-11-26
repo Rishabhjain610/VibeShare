@@ -13,7 +13,7 @@ ConnectDB();
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-  origin: ['http://localhost:5173','http://localhost:9000'],
+  origin: ['http://localhost:5173','http://localhost:9000',"*"],
   withCredentials: true,
 }))
 
