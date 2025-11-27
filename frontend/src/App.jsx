@@ -1,13 +1,15 @@
-import React from 'react'
+import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import SignUp from './pages/SignUp.jsx';
-import Login from './pages/Login.jsx';
+import SignUp from "./pages/SignUp.jsx";
+import Login from "./pages/Login.jsx";
+import Home from "./pages/Home.jsx";
+import ForgotPassword from "./pages/ForgotPassword.jsx";
 const App = () => {
   return (
     <>
-    <ToastContainer
+      <ToastContainer
         position="top-left"
         hideProgressBar={true}
         autoClose={1000}
@@ -20,15 +22,14 @@ const App = () => {
           boxShadow: "0 4px 24px rgba(0,0,0,0.5)",
         }}
       />
-    <Routes>
-      <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route path="/signup" element={<SignUp />} />
-      <Route path="/login" element={<Login />} />
-
-    </Routes>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+      </Routes>
     </>
-    
-  )
-}
+  );
+};
 
-export default App
+export default App;

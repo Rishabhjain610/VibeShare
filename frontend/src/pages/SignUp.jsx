@@ -9,9 +9,10 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link,useNavigate} from "react-router-dom";
 import axios from "axios";
 import {AuthDataContext} from "../context/AuthContext";
+import { toast } from "react-toastify";
 
 const SignUp = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -21,6 +22,7 @@ const SignUp = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { serverUrl } = useContext(AuthDataContext);
+  const navigate = useNavigate();
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -37,8 +39,12 @@ const SignUp = () => {
       );
       console.log("Signup successful:", response.data);
       setLoading(false);
+      toast.success("Signup successful!");
+      navigate("/");
+
     } catch (error) {
       setLoading(false);
+      toast.error("Signup failed. Please try again.");
       console.error("error during signup:", error.message);
     }
   };
@@ -166,9 +172,7 @@ const SignUp = () => {
               Log in
             </Link>
           </p>
-          <Link to="/forgot-password" className="block hover:text-gray-700">
-            Forgot Password?
-          </Link>
+          
         </div>
       </div>
     </div>
