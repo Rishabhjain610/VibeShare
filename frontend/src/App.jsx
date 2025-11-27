@@ -8,9 +8,10 @@ import Home from "./pages/Home.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import {useSelector} from "react-redux"
 import getCurrentUser from "./hooks/getCurrentUser.jsx";
-
+import getOtherUser from "./hooks/getOtherUser.jsx";
 const App = () => {
   getCurrentUser();
+  getOtherUser();
   const userData = useSelector((state) => state.user.userData);
   
   return (
