@@ -1,8 +1,9 @@
 import React, { useState, useContext } from "react";
-import { Link,useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Mail, KeyRound, Lock, PartyPopper } from "lucide-react";
 import { AuthDataContext } from "../context/AuthContext";
 import { toast } from "react-toastify";
+
 import axios from "axios";
 const ForgotPassword = () => {
   const [step, setStep] = useState(1);
@@ -12,7 +13,8 @@ const ForgotPassword = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const navigate=useNavigate();
+  const navigate = useNavigate();
+
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -36,7 +38,8 @@ const ForgotPassword = () => {
     setLoading(true);
     try {
       const response = await axios.post(`${serverUrl}/api/auth/verify-otp`, {
-        otp,email
+        otp,
+        email,
       });
       console.log(response.data.message);
       toast.success("OTP verified successfully!");
@@ -47,33 +50,33 @@ const ForgotPassword = () => {
       toast.error("Failed to verify OTP. Please try again.");
       setLoading(false);
     }
-    // In a real app, you'd verify the OTP here
   };
 
-  const handlePasswordReset = async(e) => {
+  const handlePasswordReset = async (e) => {
     e.preventDefault();
-   try {
-    if(newPassword!==confirmNewPassword){
-      toast.error("Passwords do not match");
-      return;
+    try {
+      if (newPassword !== confirmNewPassword) {
+        toast.error("Passwords do not match");
+        return;
+      }
+      const response = await axios.post(
+        `${serverUrl}/api/auth/reset-password`,
+        {
+          newPassword,
+          email,
+        }
+      );
+      console.log(response.data.message);
+      toast.success("Password reset successful! You can now log in.");
+      navigate("/");
+      setEmail("");
+      setOtp("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+    } catch (error) {
+      toast.error("Failed to reset password. Please try again.");
+      setLoading(false);
     }
-    const response=await axios.post(`${serverUrl}/api/auth/reset-password`,{
-      newPassword,email
-    });
-    console.log(response.data.message);
-    toast.success("Password reset successful! You can now log in.");
-    navigate("/")
-    setEmail("");
-    setOtp("");
-    setNewPassword("");
-    setConfirmNewPassword("");
-    
-
-    
-   } catch (error) {
-    toast.error("Failed to reset password. Please try again.");
-    setLoading(false);
-   }
   };
 
   return (
@@ -116,7 +119,6 @@ const ForgotPassword = () => {
         {step === 2 && (
           <form className="space-y-4" onSubmit={handleOtpSubmit}>
             <div className="relative">
-          
               <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"

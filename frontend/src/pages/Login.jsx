@@ -4,7 +4,8 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { User, Lock, PartyPopper, Eye, EyeOff } from "lucide-react";
 import { AuthDataContext } from "../context/AuthContext";
-
+import { useDispatch } from "react-redux";
+import { setUserData } from "../redux/userSlice.js";
 const Login = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [username, setUsername] = useState("");
@@ -12,6 +13,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const { serverUrl } = useContext(AuthDataContext);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,10 +27,13 @@ const Login = () => {
         { userName: username, password },
         { withCredentials: true }
       );
+      dispatch(setUserData(response.data));
       toast.success("Login successful!");
       navigate("/");
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "Login failed. Please check your credentials.";
+      const errorMessage =
+        error.response?.data?.message ||
+        "Login failed. Please check your credentials.";
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -43,7 +48,9 @@ const Login = () => {
             <PartyPopper className="h-6 w-6" />
           </div>
           <h1 className="text-3xl logo text-gray-800">VibeShare</h1>
-          <p className="text-xs text-gray-500 mt-1">Welcome back! Please log in.</p>
+          <p className="text-xs text-gray-500 mt-1">
+            Welcome back! Please log in.
+          </p>
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
@@ -74,7 +81,11 @@ const Login = () => {
               type="button"
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
-              {passwordVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {passwordVisible ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
             </button>
           </div>
 
@@ -90,7 +101,10 @@ const Login = () => {
         <div className="mt-5 text-center text-xs text-gray-500 space-y-2">
           <p>
             Don't have an account?{" "}
-            <Link to="/signup" className="text-purple-600 hover:text-purple-700 font-medium">
+            <Link
+              to="/signup"
+              className="text-purple-600 hover:text-purple-700 font-medium"
+            >
               Sign up
             </Link>
           </p>

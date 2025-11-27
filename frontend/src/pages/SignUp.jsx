@@ -13,7 +13,8 @@ import { Link,useNavigate} from "react-router-dom";
 import axios from "axios";
 import {AuthDataContext} from "../context/AuthContext";
 import { toast } from "react-toastify";
-
+import { useDispatch } from "react-redux";
+import { setUserData } from "../redux/userSlice.js";
 const SignUp = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [name, setName] = useState("");
@@ -22,7 +23,9 @@ const SignUp = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { serverUrl } = useContext(AuthDataContext);
+
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -37,7 +40,7 @@ const SignUp = () => {
         },
         { withCredentials: true }
       );
-      console.log("Signup successful:", response.data);
+      dispatch(setUserData(response.data));
       setLoading(false);
       toast.success("Signup successful!");
       navigate("/");
