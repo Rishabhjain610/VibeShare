@@ -6,14 +6,15 @@ import SignUp from "./pages/SignUp.jsx";
 import Login from "./pages/Login.jsx";
 import Home from "./pages/Home.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
-import {useSelector} from "react-redux"
-import getCurrentUser from "./hooks/getCurrentUser.jsx";
-import getOtherUser from "./hooks/getOtherUser.jsx";
+import { useSelector } from "react-redux";
+import UseGetCurrentUser from "./hooks/UseGetCurrentUser.jsx";
+import UseGetOtherUser from "./hooks/UseGetOtherUser.jsx";
+import ProfilePage from "./pages/ProfilePage.jsx";
 const App = () => {
-  getCurrentUser();
-  getOtherUser();
+  UseGetCurrentUser();
+  UseGetOtherUser();
   const userData = useSelector((state) => state.user.userData);
-  
+
   return (
     <>
       <ToastContainer
@@ -30,10 +31,26 @@ const App = () => {
         }}
       />
       <Routes>
-        <Route path="/" element={userData ? <Home /> : <Navigate to="/login" />} />
-        <Route path="/signup" element={userData ? <Navigate to="/" /> : <SignUp />} />
-        <Route path="/login" element={userData ? <Navigate to="/" /> : <Login />} />
-        <Route path="/forgot-password" element={userData ? <Navigate to="/" /> : <ForgotPassword />} />
+        <Route
+          path="/"
+          element={userData ? <Home /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/signup"
+          element={userData ? <Navigate to="/" /> : <SignUp />}
+        />
+        <Route
+          path="/login"
+          element={userData ? <Navigate to="/" /> : <Login />}
+        />
+        <Route
+          path="/forgot-password"
+          element={userData ? <Navigate to="/" /> : <ForgotPassword />}
+        />
+        <Route
+          path="/profile/:username"
+          element={userData ? <ProfilePage /> : <Navigate to="/login" />}
+        />
       </Routes>
     </>
   );

@@ -52,6 +52,16 @@ const userSchema = new Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Story",
     },
+    bio:{
+      type: String,
+    },
+    profession:{
+      type: String,
+    },
+    gender:{
+      type: String,
+      enum:["Male","Female","Other"]
+    },
     resetOtp:{
       type: String,
     },

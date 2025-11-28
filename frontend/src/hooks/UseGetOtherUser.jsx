@@ -3,11 +3,10 @@ import axios from 'axios';
 import { useDispatch,useSelector } from 'react-redux';
 import { setOtherUsers,setUserData } from '../redux/userSlice.js';
 import { AuthDataContext } from '../context/AuthContext';
-const getOtherUser = () => {
+const UseGetOtherUser = () => {
   const {serverUrl}=useContext(AuthDataContext);
   const dispatch=useDispatch();
-  const otherUsers=useSelector((state)=>state.user.setOtherUsers);
-  const userData=useSelector((state)=>state.user.setUserData);
+  
   const [loading,setLoading]=useState(false);
   const fetchOtherUsers=async()=>{
     setLoading(true);
@@ -15,7 +14,7 @@ const getOtherUser = () => {
       const response=await axios.get(`${serverUrl}/api/user/other`,{
         withCredentials:true
       });
-      dispatch(setOtherUsers(response.data));
+      dispatch(setOtherUsers(response.data.otheruser));
       setLoading(false);
 
     } catch (error) {
@@ -25,8 +24,8 @@ const getOtherUser = () => {
   };
   useEffect(()=>{
     fetchOtherUsers();
-  },[userData,otherUsers]);
+  },[dispatch,serverUrl]);
   
 }
 
-export default getOtherUser
+export default UseGetOtherUser;

@@ -2,7 +2,7 @@ import React from 'react'
 
 const RightHome = () => {
   return (
-    <div>RightHome</div>
+    <div className='hidden lg:flex'>RightHome</div>
   )
 }
 
