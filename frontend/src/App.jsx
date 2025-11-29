@@ -10,6 +10,7 @@ import { useSelector } from "react-redux";
 import UseGetCurrentUser from "./hooks/UseGetCurrentUser.jsx";
 import UseGetOtherUser from "./hooks/UseGetOtherUser.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
+import EditProfile from "./pages/EditProfile.jsx";
 const App = () => {
   UseGetCurrentUser();
   UseGetOtherUser();
@@ -51,6 +52,11 @@ const App = () => {
           path="/profile/:username"
           element={userData ? <ProfilePage /> : <Navigate to="/login" />}
         />
+        <Route
+          path="/edit-profile"
+          element={userData ? <EditProfile /> : <Navigate to="/login" />}
+        />
+
       </Routes>
     </>
   );

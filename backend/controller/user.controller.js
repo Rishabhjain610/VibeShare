@@ -2,7 +2,7 @@ import User from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 const getCurrentUser = async (req, res) => {
   try {
-    const user = await User.findById(req.userId).select("-password");
+    const user = await User.findById(req.userId).select("-password").populate("posts");
     return res.status(200).json({ user });
   } catch (error) {
     console.error("Error fetching current user:", error);
@@ -22,28 +22,44 @@ const otherUser = async (req, res) => {
 };
 const editProfile=async(req,res)=>{
   try {
-    const {name,username,bio,profession,gender}=req.body;
+    const {name,userName,bio,profession,gender}=req.body;
     const user=await User.findById(req.userId);
     if(!user){
       return res.status(404).json({message:"User not found"});
     }
-    const userNameExists=await User.findOne({userName:username});
-    if(userNameExists && userNameExists._id.toString()!==req.userId){
-      return res.status(400).json({message:"Username already taken"});
+    
+    
+    if(userName && userName !== user.userName){
+      const userNameExists=await User.findOne({userName:userName});
+      if(userNameExists){
+        return res.status(400).json({message:"Username already taken"});
+      }
     }
-    let profileImage
+    
+   
     if(req.file){ 
-      profileImage = await uploadOnCloudinary(req.file.path);
+      const profilePicUrl = await uploadOnCloudinary(req.file.path);
+      if (profilePicUrl) {
+        user.profileImage = profilePicUrl;
+      }
     }
-    user.name = name;
-    user.userName = username;
-    user.profileImage = profileImage;
-    user.bio = bio;
-    user.profession = profession;
-    user.gender = gender;
-    user.profileImage = profileImage
+
+    
+    if (name) user.name = name;
+    if (userName) user.userName = userName;
+    if (bio) user.bio = bio;
+    if (profession) user.profession = profession;
+    if (gender) {
+      
+      user.gender = gender.charAt(0).toUpperCase() + gender.slice(1);
+    }
+       
     await user.save();
-    return res.status(200).json({message:"Profile updated successfully", user});
+
+    
+    const updatedUser = await User.findById(req.userId).select("-password");
+
+    return res.status(200).json({message:"Profile updated successfully", user: updatedUser});
   } catch (error) {
     console.error("Error updating profile:", error);
     return res.status(500).json({message:"Internal server error"});
@@ -52,7 +68,7 @@ const editProfile=async(req,res)=>{
 }
 const getprofile=async(req,res)=>{
   try {
-    const username=await req.params.username;
+    const username= req.params.username;
     const user=await User.findOne({userName:username}).select("-password");
     if(!user){
       return res.status(404).json({message:"User not found"});

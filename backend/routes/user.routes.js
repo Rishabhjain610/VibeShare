@@ -5,6 +5,7 @@ import upload from "../middleware/multer.middleware.js";
 const Userrouter=express.Router();
 Userrouter.get("/current",isAuth,getCurrentUser);
 Userrouter.get("/other",isAuth,otherUser);
-Userrouter.post("/edit",isAuth,upload.single("profileImage"),editProfile);
+
+Userrouter.post("/edit-profile",isAuth,upload.single("profilePic"),editProfile);
 Userrouter.get("/profile/:username",isAuth,getprofile);
 export default Userrouter;

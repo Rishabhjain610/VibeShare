@@ -42,10 +42,10 @@ const ProfilePage = () => {
         `${serverUrl}/api/user/profile/${username}`,
         { withCredentials: true }
       );
-      console.log("Profile Data:", response.data);
+      
       dispatch(setProfileData(response.data));
       
-      // Check if current user is following this profile
+      
       
     } catch (error) {
       console.error("Error fetching profile data:", error);
@@ -64,9 +64,10 @@ const ProfilePage = () => {
     return () => {
       dispatch(clearProfileData());
     };
-  }, [username, dispatch, serverUrl]);
+  }, [username, dispatch, serverUrl,isOwnProfile,currentUser]);
 
- 
+  // ✅ FIX: Re-added the follow/unfollow handler
+  
   
   const handleLogout = async () => {
     setLoading(true);
@@ -88,41 +89,11 @@ const ProfilePage = () => {
     }
   };
 
-  const posts = [
-    {
-      id: 1,
-      image: "https://images.unsplash.com/photo-1682687220742-aba13b6e50ba?w=500",
-      likes: 234,
-    },
-    {
-      id: 2,
-      image: "https://images.unsplash.com/photo-1682687221038-404670f09439?w=500",
-      likes: 456,
-    },
-    {
-      id: 3,
-      image: "https://images.unsplash.com/photo-1682687220063-4742bd7fd538?w=500",
-      likes: 789,
-    },
-    {
-      id: 4,
-      image: "https://images.unsplash.com/photo-1682687220067-dced9a881b56?w=500",
-      likes: 321,
-    },
-    {
-      id: 5,
-      image: "https://images.unsplash.com/photo-1682687220199-d0124f48f1f9?w=500",
-      likes: 654,
-    },
-    {
-      id: 6,
-      image: "https://images.unsplash.com/photo-1682687220198-88e9bdea9931?w=500",
-      likes: 432,
-    },
-  ];
+  // Use posts from the API response, or an empty array if none exist
+  const posts = profileData?.posts || [];
 
   // Show loading state while fetching profile data
-  if (fetchingProfile || !profileData) {
+  if (fetchingProfile) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -177,7 +148,7 @@ const ProfilePage = () => {
       </div>
 
       
-      <div className="max-w-5xl mx-auto px-4 py-6 md:py-8">
+      <div className="max-w-5xl mx-auto px-2 sm:px-4 py-6 md:py-8">
         <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-6">
           
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
@@ -186,7 +157,7 @@ const ProfilePage = () => {
               <div className="w-28 h-28 md:w-36 md:h-36 lg:w-40 lg:h-40 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-1">
                 <div className="w-full h-full rounded-full bg-white p-1">
                   <img
-                    src={profileData?.profilePic || "/image.png"}
+                    src={profileData?.profileImage || "/image.png"}
                     alt={profileData?.name || "Profile"}
                     className="w-full h-full rounded-full object-cover"
                     onError={(e) => {
@@ -208,7 +179,7 @@ const ProfilePage = () => {
                   {!isOwnProfile ? (
                     <>
                       <button 
-                        
+                       
                         disabled={followLoading}
                         className={`flex-1 md:flex-none flex items-center justify-center gap-2 font-semibold px-6 md:px-8 py-2 rounded-lg transition-all duration-300 text-sm md:text-base disabled:opacity-50 ${
                           isFollowing
@@ -242,7 +213,8 @@ const ProfilePage = () => {
                       </button>
                     </>
                   ) : (
-                    <button className="flex-1 md:flex-none bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold px-6 md:px-8 py-2 rounded-lg transition-colors text-sm md:text-base">
+                    <button className="flex-1 md:flex-none bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold px-6 md:px-8 py-2 rounded-lg transition-colors text-sm md:text-base"
+                    onClick={() => navigate('/edit-profile')}>
                       Edit Profile
                     </button>
                   )}
@@ -256,7 +228,7 @@ const ProfilePage = () => {
               <div className="flex justify-center md:justify-start gap-6 md:gap-8 mb-6">
                 <div className="text-center">
                   <p className="text-lg md:text-xl font-bold text-gray-800">
-                    {profileData?.posts?.length || 0}
+                    {posts.length}
                   </p>
                   <p className="text-xs md:text-sm text-gray-600">Posts</p>
                 </div>
@@ -306,21 +278,21 @@ const ProfilePage = () => {
         </div>
 
         
-        <div className="grid grid-cols-3 gap-1 md:gap-2 lg:gap-4">
+        <div className="grid grid-cols-3 gap-1 sm:gap-2 md:gap-4">
           {posts.map((post) => (
             <div
-              key={post.id}
-              className="aspect-square bg-gray-200 rounded-md md:rounded-lg overflow-hidden cursor-pointer group relative"
+              key={post._id}
+              className="aspect-square bg-gray-200 rounded-sm sm:rounded-md md:rounded-lg overflow-hidden cursor-pointer group relative"
             >
               <img
                 src={post.image}
-                alt={`Post ${post.id}`}
+                alt={`Post by ${profileData?.userName}`}
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
               />
               <div className="hidden md:flex absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center">
                 <div className="flex items-center gap-2 text-white font-semibold">
                   <span>❤️</span>
-                  <span>{post.likes}</span>
+                  <span>{post.likes.length}</span>
                 </div>
               </div>
             </div>
