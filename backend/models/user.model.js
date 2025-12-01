@@ -36,42 +36,48 @@ const userSchema = new Schema(
         ref: "User",
       },
     ],
-    post:[
+    posts: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Post",
-      }
+      },
     ],
-    saved:[
+    saved: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Post",
-      }
+      },
     ],
-    story:{
+    reels:[
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Reel",
+      },
+    ],
+    story: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Story",
     },
-    bio:{
+    bio: {
       type: String,
     },
-    profession:{
+    profession: {
       type: String,
     },
-    gender:{
+    gender: {
       type: String,
-      enum:["Male","Female","Other"]
+      enum: ["Male", "Female", "Other"],
     },
-    resetOtp:{
+    resetOtp: {
       type: String,
     },
-    otpExpires:{
+    otpExpires: {
       type: Date,
     },
-    isOtpVerified:{
+    isOtpVerified: {
       type: Boolean,
-      default:false,
-    }
+      default: false,
+    },
   },
   {
     timestamps: true,

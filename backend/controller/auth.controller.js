@@ -73,7 +73,7 @@ const Logout = async (req, res) => {
   }
 };
 
-const sendOtp=async(req,res)=>{
+const sendOtp = async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) {
@@ -81,15 +81,17 @@ const sendOtp=async(req,res)=>{
     }
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json({ message: "User with this email does not exist" });
+      return res
+        .status(400)
+        .json({ message: "User with this email does not exist" });
     }
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    
+
     user.resetOtp = otp;
     user.otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes from now
     user.isOtpVerified = false;
     await user.save();
-    
+
     await sendMail(email, otp);
     return res.status(200).json({ message: "OTP sent to email" });
   } catch (error) {
@@ -97,7 +99,7 @@ const sendOtp=async(req,res)=>{
   }
 };
 
-const verifyOtp=async(req,res)=>{
+const verifyOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
     if (!email || !otp) {
@@ -105,7 +107,9 @@ const verifyOtp=async(req,res)=>{
     }
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json({ message: "User with this email does not exist" });
+      return res
+        .status(400)
+        .json({ message: "User with this email does not exist" });
     }
     if (user.resetOtp !== otp) {
       return res.status(400).json({ message: "Invalid OTP" });
@@ -121,34 +125,32 @@ const verifyOtp=async(req,res)=>{
   } catch (error) {
     return res.status(500).json({ message: "Internal server error" });
   }
-}
+};
 
-const resetPassword=async(req,res)=>{
+const resetPassword = async (req, res) => {
   try {
-    const {newPassword,email}=req.body;
-    if(!newPassword || !email){
+    const { newPassword, email } = req.body;
+    if (!newPassword || !email) {
       return res.status(400).json({ message: "New password is required" });
     }
-    const user=await User.findOne({ email });
+    const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json({ message: "User with this email does not exist" });
+      return res
+        .status(400)
+        .json({ message: "User with this email does not exist" });
     }
 
-    if(!user.isOtpVerified){
+    if (!user.isOtpVerified) {
       return res.status(400).json({ message: "OTP not verified" });
     }
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    user.password=hashedPassword;
-    user.isOtpVerified=false;
+    user.password = hashedPassword;
+    user.isOtpVerified = false;
     await user.save();
     return res.status(200).json({ message: "Password reset successful" });
   } catch (error) {
     return res.status(500).json({ message: "Internal server error" });
   }
-};  
-
-
-
-
+};
 
 export { Signup, Login, Logout, sendOtp, verifyOtp, resetPassword };

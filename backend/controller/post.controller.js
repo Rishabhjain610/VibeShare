@@ -1,4 +1,4 @@
-import Post from "../models/Post.js";
+import Post from "../models/post.model.js";
 import User from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 const uploadPost = async (req, res) => {
@@ -49,18 +49,28 @@ const uploadPost = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+
+
+
+
+
+
+
 const getAllPosts = async (req, res) => {
   try {
-    const posts = await Post.find({ author: req.userId }).populate(
+    const posts = await Post.find({  }).populate(
       "author",
       "name userName profileImage"
-    );
+    ).populate("comments.author","name userName profileImage");
     return res.status(200).json({ posts });
   } catch (error) {
     console.error("Error fetching posts:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+
 
 
 const likes=async(req,res)=>{
@@ -82,6 +92,14 @@ const likes=async(req,res)=>{
     return res.status(500).json({ message: "Internal server error" });
   }
 }
+
+
+
+
+
+
+
+
 const commentOnPost=async(req,res)=>{
   try {
     const postId=req.params.postId;
@@ -101,6 +119,12 @@ const commentOnPost=async(req,res)=>{
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+
+
+
+
+
 const savedPosts=async(req,res)=>{
   try {
     const postId=req.params.postId;
@@ -114,6 +138,7 @@ const savedPosts=async(req,res)=>{
       user.savedPosts.push(postId);
     }
     await user.save();
+    await user.populate("savedPosts");
     return res.status(200).json({ message: "Saved posts updated successfully", user: user });
   } catch (error) {
     console.error("Error updating saved posts:", error);

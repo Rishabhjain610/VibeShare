@@ -1,5 +1,5 @@
 import { verifyToken } from "../utils/token.js";
-const isAuth=async (req,res,next)=>{
+const isAuth = async (req, res, next) => {
   try {
     const token = req.cookies.token;
     if (!token) {
@@ -11,5 +11,5 @@ const isAuth=async (req,res,next)=>{
   } catch (error) {
     return res.status(500).json({ message: "Internal server error" });
   }
-}
+};
 export default isAuth;
