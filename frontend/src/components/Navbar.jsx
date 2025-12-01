@@ -10,7 +10,7 @@ const Navbar = () => {
   const navItems = [
     { icon: Home, path: '/' },
     { icon: Search, path: '/search' },
-    { icon: PlusSquare, path: '/create', isCenter: true },
+    { icon: PlusSquare, path: '/upload', isCenter: true },
     { icon: Film, path: '/reels' },
     { icon: User, path: `/profile/${userData?.userName}` },
   ];

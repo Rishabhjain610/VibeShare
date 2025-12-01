@@ -11,6 +11,7 @@ import UseGetCurrentUser from "./hooks/UseGetCurrentUser.jsx";
 import UseGetOtherUser from "./hooks/UseGetOtherUser.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
 import EditProfile from "./pages/EditProfile.jsx";
+import UploadPages from "./pages/UploadPages.jsx";
 const App = () => {
   UseGetCurrentUser();
   UseGetOtherUser();
@@ -56,7 +57,10 @@ const App = () => {
           path="/edit-profile"
           element={userData ? <EditProfile /> : <Navigate to="/login" />}
         />
-
+        <Route
+          path="/upload"
+          element={userData ? <UploadPages /> : <Navigate to="/login" />}
+        />
       </Routes>
     </>
   );

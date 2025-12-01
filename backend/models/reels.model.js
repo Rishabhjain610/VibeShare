@@ -24,12 +24,7 @@ const reelSchema = new Schema(
     thumbnail: {
       type: String,
     },
-    reels: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Reel",
-      },
-    ],
+    
   },
   {
     timestamps: true,

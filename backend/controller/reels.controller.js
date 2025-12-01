@@ -79,7 +79,7 @@ const commentOnReel=async(req,res)=>{
     }
     const user=await User.findById(req.userId);
     reel.comments.push({
-      user: user._id,
+      author: user._id,
       comment: comment,
     });
 

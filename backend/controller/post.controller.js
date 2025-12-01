@@ -3,7 +3,7 @@ import User from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 const uploadPost = async (req, res) => {
   try {
-    const { mediaTypes, caption } = req.body;
+    const { mediaType, caption } = req.body;
     let media;
     if (req.file) {
       const mediaUrl = await uploadOnCloudinary(req.file.path);
@@ -15,7 +15,7 @@ const uploadPost = async (req, res) => {
         .json({ message: "Post must have media or caption" });
     }
     const newPost = await Post.create({
-      mediaTypes,
+      mediaType,
       media,
       caption,
       author: req.userId,
