@@ -2,9 +2,14 @@ import React from 'react';
 import StoryCard from './StoryCard';
 import Post from './Post';
 import { PartyPopper, Heart } from 'lucide-react';
-// REMOVED: import Navbar from './Navbar';
+import { useSelector } from 'react-redux';
 
 const Feed = () => {
+  // ✅ Fixed: Properly access posts from Redux with optional chaining
+  const posts = useSelector((state) => state.post?.postData.posts) || [];
+  
+  console.log("Posts in Feed component:", posts);
+
   // Placeholder data for stories
   const stories = [
     { name: 'Your Story', profilePic: 'https://i.pravatar.cc/150?img=1' },
@@ -14,26 +19,6 @@ const Feed = () => {
     { name: 'Chris Green', profilePic: 'https://i.pravatar.cc/150?img=51' },
     { name: 'Michael Brown', profilePic: 'https://i.pravatar.cc/150?img=11' },
     { name: 'Sarah Wilson', profilePic: 'https://i.pravatar.cc/150?img=49' },
-  ];
-
-  // Placeholder data for posts
-  const posts = [
-    {
-      user: { name: 'Jane Doe', userName: 'janedoe', profilePic: 'https://i.pravatar.cc/150?img=26' },
-      imageUrl: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?q=80&w=2546&auto=format&fit=crop',
-      likes: 1204,
-      caption: 'Beautiful day out in the city!',
-      comments: 88,
-      timestamp: '2 hours ago',
-    },
-    {
-      user: { name: 'John Smith', userName: 'johnsmith', profilePic: 'https://i.pravatar.cc/150?img=32' },
-      imageUrl: 'https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?q=80&w=2487&auto=format&fit=crop',
-      likes: 856,
-      caption: 'Exploring the great outdoors. Nature is amazing.',
-      comments: 42,
-      timestamp: '5 hours ago',
-    },
   ];
 
   return (
@@ -59,11 +44,21 @@ const Feed = () => {
           </div>
         </div>
 
-        {/* Posts Section - Added bottom padding to prevent navbar overlap */}
+        {/* Posts Section */}
         <div className="pb-24">
-          {posts.map((post, index) => (
-            <Post key={index} post={post} />
-          ))}
+          {posts && posts.length > 0 ? (
+            posts.map((post) => (
+              <Post key={post._id} post={post} />
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                <PartyPopper className="h-12 w-12 text-gray-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">No posts yet</h3>
+              <p className="text-gray-600 text-sm">Start following people to see their posts here!</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

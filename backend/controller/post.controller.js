@@ -50,19 +50,12 @@ const uploadPost = async (req, res) => {
   }
 };
 
-
-
-
-
-
-
-
 const getAllPosts = async (req, res) => {
   try {
-    const posts = await Post.find({  }).populate(
-      "author",
-      "name userName profileImage"
-    ).populate("comments.author","name userName profileImage");
+    const posts = await Post.find({})
+      .populate("author", "name userName profileImage")
+      .populate("comments.author", "name userName profileImage")
+      .sort({ createdAt: -1 });
     return res.status(200).json({ posts });
   } catch (error) {
     console.error("Error fetching posts:", error);
@@ -70,76 +63,67 @@ const getAllPosts = async (req, res) => {
   }
 };
 
-
-
-
-const likes=async(req,res)=>{
+const likes = async (req, res) => {
   try {
-   const postId=req.params.postId;
-   const post=await Post.findById(postId);
-   if(!post){
-    return res.status(404).json({message:"Post not found"});
-   }
-   if(post.likes.includes(req.userId)){
-    post.likes.pull(req.userId);
-   }else{
-    post.likes.push(req.userId);
-   }
-   await post.save();
-   return res.status(200).json({ message: "Post like status updated", post: post });
+    const postId = req.params.postId;
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+    if (post.likes.includes(req.userId)) {
+      post.likes.pull(req.userId);
+    } else {
+      post.likes.push(req.userId);
+    }
+    await post.save();
+    return res
+      .status(200)
+      .json({ message: "Post like status updated", post: post });
   } catch (error) {
     console.error("Error liking post:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
-}
+};
 
-
-
-
-
-
-
-
-const commentOnPost=async(req,res)=>{
+const commentOnPost = async (req, res) => {
   try {
-    const postId=req.params.postId;
-    const {comment}=req.body;
-    const post=await Post.findById(postId);
-    const user=await User.findById(req.userId);
-    if(!post){
-      return res.status(404).json({message:"Post not found"});
+    const postId = req.params.postId;
+    const { comment } = req.body;
+    const post = await Post.findById(postId);
+    const user = await User.findById(req.userId);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
     }
     post.comments.push({ author: req.userId, comment });
     await post.save();
     await post.populate("author", "name userName profileImage");
     await post.populate("comments.author");
-    return res.status(200).json({ message: "Comment added successfully", post: post });
+    return res
+      .status(200)
+      .json({ message: "Comment added successfully", post: post });
   } catch (error) {
     console.error("Error commenting on post:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
 
-
-
-
-
-
-const savedPosts=async(req,res)=>{
+const savedPosts = async (req, res) => {
   try {
-    const postId=req.params.postId;
-    const user=await User.findById(req.userId);
-    if(!user){
-      return res.status(404).json({message:"User not found"});
+    const postId = req.params.postId;
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
-    if(user.savedPosts.includes(postId)){
+    if (user.savedPosts.includes(postId)) {
       user.savedPosts.pull(postId);
-    }else{
+    } else {
       user.savedPosts.push(postId);
     }
     await user.save();
     await user.populate("savedPosts");
-    return res.status(200).json({ message: "Saved posts updated successfully", user: user });
+    return res
+      .status(200)
+      .json({ message: "Saved posts updated successfully", user: user });
   } catch (error) {
     console.error("Error updating saved posts:", error);
     return res.status(500).json({ message: "Internal server error" });

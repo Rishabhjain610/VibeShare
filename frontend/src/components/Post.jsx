@@ -1,7 +1,10 @@
 import React from 'react';
-import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal } from 'lucide-react';
+import { Heart, MessageCircle, Bookmark, MoreHorizontal } from 'lucide-react';
 
 const Post = ({ post }) => {
+  // ✅ Add safety checks
+  if (!post) return null;
+
   return (
     <div className="bg-white border border-gray-200 rounded-xl mb-6">
       
@@ -9,12 +12,12 @@ const Post = ({ post }) => {
         <div className="flex items-center gap-3">
           <img
             className="h-10 w-10 rounded-full object-cover"
-            src={post.user.profilePic}
-            alt={post.user.name}
+            src={post.author?.profilePic || "/image.png"}
+            alt={post.author?.name || "User"}
           />
           <div>
-            <p className="font-bold text-sm text-gray-800">{post.user.name}</p>
-            <p className="text-xs text-gray-500">@{post.user.userName}</p>
+            <p className="font-bold text-sm text-gray-800">{post.author?.name || "Unknown"}</p>
+            <p className="text-xs text-gray-500">@{post.author?.userName || "unknown"}</p>
           </div>
         </div>
         <button className="text-gray-500 hover:text-gray-800">
@@ -22,14 +25,22 @@ const Post = ({ post }) => {
         </button>
       </div>
 
-    
-      <img
-        className="w-full h-auto max-h-[70vh] object-cover"
-        src={post.imageUrl}
-        alt="Post content"
-      />
+      
+      {post.mediaType === 'video' ? (
+        <video
+          className="w-full h-auto max-h-[70vh] object-cover"
+          src={post.media}
+          controls
+        />
+      ) : (
+        <img
+          className="w-full h-auto max-h-[70vh] object-cover"
+          src={post.media || "/image.png"}
+          alt="Post content"
+        />
+      )}
 
-     
+      
       <div className="p-3 sm:p-4">
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-4">
@@ -39,26 +50,31 @@ const Post = ({ post }) => {
             <button>
               <MessageCircle size={24} className="text-gray-700 hover:text-gray-900 transition-colors" />
             </button>
-            <button>
-              <Send size={24} className="text-gray-700 hover:text-gray-900 transition-colors" />
-            </button>
           </div>
           <button>
             <Bookmark size={24} className="text-gray-700 hover:text-gray-900 transition-colors" />
           </button>
         </div>
 
-        
-        <p className="font-semibold text-sm text-gray-800 mb-1">{post.likes} likes</p>
-        <p className="text-sm text-gray-700">
-          <span className="font-semibold text-gray-800 mr-2">{post.user.userName}</span>
-          {post.caption}
+       
+        <p className="font-semibold text-sm text-gray-800 mb-1">
+          {post.likes?.length || 0} likes
         </p>
-        <a href="#" className="text-xs text-gray-500 hover:underline mt-1 block">View all {post.comments} comments</a>
-        <p className="text-xs text-gray-400 uppercase mt-2">{post.timestamp}</p>
+        <p className="text-sm text-gray-700">
+          <span className="font-semibold text-gray-800 mr-2">
+            {post.author?.userName || "user"}
+          </span>
+          {post.caption || ""}
+        </p>
+        <a href="#" className="text-xs text-gray-500 hover:underline mt-1 block">
+          View all {post.comments?.length || 0} comments
+        </a>
+        <p className="text-xs text-gray-400 uppercase mt-2">
+          {post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ""}
+        </p>
       </div>
 
-      
+  
       <div className="border-t border-gray-200 px-3 py-2 sm:px-4 sm:py-3">
         <form className="flex items-center gap-2">
           <input

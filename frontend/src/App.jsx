@@ -12,9 +12,11 @@ import UseGetOtherUser from "./hooks/UseGetOtherUser.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
 import EditProfile from "./pages/EditProfile.jsx";
 import UploadPages from "./pages/UploadPages.jsx";
+import UseGetAllPost from "./hooks/UseGetAllPost.jsx";
 const App = () => {
   UseGetCurrentUser();
   UseGetOtherUser();
+  UseGetAllPost();
   const userData = useSelector((state) => state.user.userData);
 
   return (

@@ -1,8 +1,10 @@
 import express from "express";
 import { uploadReel,getAllReels,likes,commentOnReel } from "../controller/reels.controller.js";
+import isAuth from "../middleware/auth.middleware.js";
+import upload from "../middleware/multer.middleware.js";
 const ReelRouter = express.Router();
-ReelRouter.post("/uploadreel",uploadReel);
-ReelRouter.get("/getallreels",getAllReels);
-ReelRouter.post("/like/:reelId",likes);
-ReelRouter.post("/comment/:reelId",commentOnReel);
+ReelRouter.post("/uploadreel",isAuth,upload.single("media"),uploadReel);
+ReelRouter.get("/getallreels",isAuth,getAllReels);
+ReelRouter.post("/like/:reelId",isAuth,likes);
+ReelRouter.post("/comment/:reelId",isAuth,commentOnReel);
 export default ReelRouter;
