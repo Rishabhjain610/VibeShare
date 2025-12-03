@@ -11,7 +11,6 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { AuthDataContext } from "../context/AuthContext";
-// Reverted to only import what is defined in your userSlice
 import { setUserData } from "../redux/userSlice.js";
 import { toast } from "react-toastify";
 
@@ -24,6 +23,25 @@ const LeftHome = () => {
   const userData = useSelector((state) => state.user.userData);
   const otherUsersData = useSelector((state) => state.user.otherUsers);
 
+  const handleFollow = async (e, followUserId) => {
+    // Stop the click from propagating to the parent div, which navigates to the profile
+    e.stopPropagation();
+    try {
+      const response = await axios.post(
+        `${serverUrl}/api/user/follow/${followUserId}`,
+        {},
+        { withCredentials: true }
+      );
+      // Update the central user state in Redux with the latest user data from the server
+      if (response.data.currentUser) {
+        dispatch(setUserData(response.data.currentUser));
+      }
+    } catch (error) {
+      console.error("Error following/unfollowing user:", error);
+      toast.error("Action failed. Please try again.");
+    }
+  };
+
   const handleLogout = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -33,7 +51,6 @@ const LeftHome = () => {
         {},
         { withCredentials: true }
       );
-      // Reverted to dispatching only setUserData(null)
       dispatch(setUserData(null));
       toast.success("Logout successful!");
       navigate("/login");
@@ -48,7 +65,10 @@ const LeftHome = () => {
   return (
     <div className="w-[20%] hidden lg:flex flex-col justify-between h-screen bg-white border-r border-gray-200 p-4 sticky top-0">
       <div>
-        <div className="flex items-center gap-2 p-3 mb-6 cursor-pointer" onClick={() => navigate('/')}>
+        <div
+          className="flex items-center gap-2 p-3 mb-6 cursor-pointer"
+          onClick={() => navigate("/")}
+        >
           <PartyPopper className="h-7 w-7 text-purple-600" />
           <h1 className="text-2xl logo text-gray-800">VibeShare</h1>
         </div>
@@ -56,7 +76,10 @@ const LeftHome = () => {
         <nav className="space-y-2">
           <a
             href="#"
-            onClick={(e) => { e.preventDefault(); navigate('/'); }}
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/");
+            }}
             className="flex items-center gap-4 p-3 rounded-lg transition-colors text-sm font-medium bg-purple-100 text-purple-700"
           >
             <HomeIcon size={20} />
@@ -91,36 +114,40 @@ const LeftHome = () => {
           <h2 className="font-bold text-gray-800 mb-4">Suggested Users</h2>
           <div className="space-y-4">
             {Array.isArray(otherUsersData) && otherUsersData.length > 0 ? (
-              otherUsersData.map((user) => (
-                <div
-                  key={user._id}
-                  className="flex items-center justify-between cursor-pointer hover:bg-gray-100 p-2 rounded-lg transition-colors"
-                  onClick={() => navigate(`/profile/${user.userName}`)}
-                >
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={user?.profileImage || "/image.png"}
-                      alt={user.name}
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
-                    <div>
-                      <p className="font-semibold text-sm text-gray-800">
-                        {user.name}
-                      </p>
-                      <p className="text-xs text-gray-500">@{user.userName}</p>
-                    </div>
-                  </div>
-                  <button 
-                    className="bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium py-1.5 px-4 rounded-full transition-colors"
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent navigation when clicking follow
-                      // Add follow logic here
-                    }}
+              otherUsersData.map((user) => {
+                const isFollowing = userData?.following?.includes(user._id);
+                return (
+                  <div
+                    key={user._id}
+                    className="flex items-center justify-between cursor-pointer hover:bg-gray-100 p-2 rounded-lg transition-colors"
+                    onClick={() => navigate(`/profile/${user.userName}`)}
                   >
-                    Follow
-                  </button>
-                </div>
-              ))
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={user?.profileImage || "/image.png"}
+                        alt={user.name}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                      <div>
+                        <p className="font-semibold text-sm text-gray-800">
+                          {user.name}
+                        </p>
+                        <p className="text-xs text-gray-500">@{user.userName}</p>
+                      </div>
+                    </div>
+                    <button
+                      className={`${
+                        isFollowing
+                          ? "bg-red-200 text-gray-700 hover:bg-red-300"
+                          : "bg-purple-600 text-white hover:bg-purple-700"
+                      } text-xs font-medium py-1.5 px-4 rounded-full transition-colors`}
+                      onClick={(e) => handleFollow(e, user._id)}
+                    >
+                      {isFollowing ? "Unfollow" : "Follow"}
+                    </button>
+                  </div>
+                );
+              })
             ) : (
               <p className="text-xs text-gray-500 text-center">
                 No users to suggest.
@@ -138,7 +165,7 @@ const LeftHome = () => {
           {userData ? (
             <>
               <img
-                src={userData.profilePic || "/image.png"}
+                src={userData.profileImage || "/image.png"}
                 alt="Profile"
                 className="w-10 h-10 rounded-full object-cover"
               />

@@ -79,4 +79,43 @@ const getprofile = async (req, res) => {
   }
 };
 
-export { getCurrentUser, otherUser, editProfile, getprofile };
+const follow = async (req, res) => {
+  try {
+    const currentUserId = req.userId;
+    const targetUserId = req.params.userId;
+    if (!currentUserId || !targetUserId) {
+      return res.status(400).json({ message: "Invalid user IDs" });
+    }
+    const currentUser = await User.findById(currentUserId);
+    const targetUser = await User.findById(targetUserId);
+    if (!currentUser || !targetUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if (currentUserId === targetUserId) {
+      return res
+        .status(400)
+        .json({ message: "Users cannot follow themselves" });
+    }
+    if (currentUser.following.includes(targetUserId)) {
+      currentUser.following.pull(targetUserId);
+      targetUser.followers.pull(currentUserId);
+    } else {
+      currentUser.following.push(targetUserId);
+      targetUser.followers.push(currentUserId);
+    }
+    await currentUser.save();
+    await targetUser.save();
+    return res
+      .status(200)
+      .json({
+        message: "Follow status updated successfully",
+        currentUser,
+        targetUser,
+      });
+  } catch (error) {
+    console.error("Error following/unfollowing user:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export { getCurrentUser, otherUser, editProfile, getprofile, follow };

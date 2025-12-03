@@ -120,16 +120,23 @@ const savedPosts = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    if (user.savedPosts.includes(postId)) {
-      user.savedPosts.pull(postId);
+    if (user.saved.includes(postId)) {
+      user.saved.pull(postId);
     } else {
-      user.savedPosts.push(postId);
+      user.saved.push(postId);
     }
     await user.save();
-    await user.populate("savedPosts");
+    const populatedUser = await User.findById(req.userId).populate({
+      path: "saved",
+      select: "media caption author",
+      populate: {
+        path: "author",
+        select: "name userName profileImage",
+      },
+    });
     return res
       .status(200)
-      .json({ message: "Saved posts updated successfully", user: user });
+      .json({ message: "Saved posts updated successfully", user: populatedUser });
   } catch (error) {
     console.error("Error updating saved posts:", error);
     return res.status(500).json({ message: "Internal server error" });
