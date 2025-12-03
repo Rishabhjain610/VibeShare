@@ -2,7 +2,11 @@ import React, { useState, useEffect, useContext } from "react";
 import { AuthDataContext } from "../context/AuthContext";
 import { useParams } from "react-router-dom";
 import axios from "axios";
-import { setProfileData, setUserData, clearProfileData } from "../redux/userSlice";
+import {
+  setProfileData,
+  setUserData,
+  clearProfileData,
+} from "../redux/userSlice";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Settings,
@@ -15,6 +19,7 @@ import {
   LogOut,
   UserPlus,
   UserCheck,
+  CloudSnow,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -34,7 +39,7 @@ const ProfilePage = () => {
   const profileData = useSelector((state) => state.user.profileData?.user);
   
   const isOwnProfile = currentUser?.userName === username;
-
+  
   const getProfileData = async () => {
     setFetchingProfile(true);
     try {
@@ -42,11 +47,8 @@ const ProfilePage = () => {
         `${serverUrl}/api/user/profile/${username}`,
         { withCredentials: true }
       );
-      
+
       dispatch(setProfileData(response.data));
-      
-      
-      
     } catch (error) {
       console.error("Error fetching profile data:", error);
       toast.error("Failed to load profile");
@@ -64,11 +66,10 @@ const ProfilePage = () => {
     return () => {
       dispatch(clearProfileData());
     };
-  }, [username, dispatch, serverUrl,isOwnProfile,currentUser]);
+  }, [username, dispatch, serverUrl, isOwnProfile, currentUser]);
 
   // ✅ FIX: Re-added the follow/unfollow handler
-  
-  
+
   const handleLogout = async () => {
     setLoading(true);
     try {
@@ -90,7 +91,7 @@ const ProfilePage = () => {
   };
 
   // Use posts from the API response, or an empty array if none exist
-  const posts = profileData?.posts || [];
+  const posts = currentUser.posts || [];
 
   // Show loading state while fetching profile data
   if (fetchingProfile) {
@@ -106,10 +107,8 @@ const ProfilePage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-    
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10 backdrop-blur-sm bg-white/90">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-        
           <button
             onClick={() => navigate(-1)}
             className="lg:hidden p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -117,16 +116,16 @@ const ProfilePage = () => {
             <ArrowLeft size={24} className="text-gray-800" />
           </button>
 
-          
           <div
             onClick={() => navigate("/")}
             className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity absolute left-1/2 -translate-x-1/2 lg:static lg:left-auto lg:translate-x-0"
           >
             <PartyPopper className="h-6 w-6 md:h-7 md:w-7 text-purple-600" />
-            <h1 className="text-xl md:text-2xl logo text-gray-800">VibeShare</h1>
+            <h1 className="text-xl md:text-2xl logo text-gray-800">
+              VibeShare
+            </h1>
           </div>
 
-          
           {isOwnProfile && (
             <button
               onClick={handleLogout}
@@ -138,7 +137,6 @@ const ProfilePage = () => {
             </button>
           )}
 
-          
           <button className="lg:hidden p-2 hover:bg-gray-100 rounded-full transition-colors">
             <MoreHorizontal size={24} className="text-gray-800" />
           </button>
@@ -147,12 +145,9 @@ const ProfilePage = () => {
         </div>
       </div>
 
-      
       <div className="max-w-5xl mx-auto px-2 sm:px-4 py-6 md:py-8">
         <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-6">
-          
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6 md:gap-8">
-           
             <div className="flex-shrink-0">
               <div className="w-28 h-28 md:w-36 md:h-36 lg:w-40 lg:h-40 rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-500 p-1">
                 <div className="w-full h-full rounded-full bg-white p-1">
@@ -168,9 +163,7 @@ const ProfilePage = () => {
               </div>
             </div>
 
-            
             <div className="flex-1 text-center md:text-left w-full">
-             
               <div className="flex flex-col md:flex-row items-center gap-3 md:gap-4 mb-6">
                 <h2 className="text-xl md:text-2xl font-semibold text-gray-800">
                   {profileData?.userName || username}
@@ -178,8 +171,7 @@ const ProfilePage = () => {
                 <div className="flex gap-2 md:gap-3 w-full md:w-auto">
                   {!isOwnProfile ? (
                     <>
-                      <button 
-                       
+                      <button
                         disabled={followLoading}
                         className={`flex-1 md:flex-none flex items-center justify-center gap-2 font-semibold px-6 md:px-8 py-2 rounded-lg transition-all duration-300 text-sm md:text-base disabled:opacity-50 ${
                           isFollowing
@@ -213,8 +205,10 @@ const ProfilePage = () => {
                       </button>
                     </>
                   ) : (
-                    <button className="flex-1 md:flex-none bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold px-6 md:px-8 py-2 rounded-lg transition-colors text-sm md:text-base"
-                    onClick={() => navigate('/edit-profile')}>
+                    <button
+                      className="flex-1 md:flex-none bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold px-6 md:px-8 py-2 rounded-lg transition-colors text-sm md:text-base"
+                      onClick={() => navigate("/edit-profile")}
+                    >
                       Edit Profile
                     </button>
                   )}
@@ -224,7 +218,6 @@ const ProfilePage = () => {
                 </div>
               </div>
 
-              
               <div className="flex justify-center md:justify-start gap-6 md:gap-8 mb-6">
                 <div className="text-center">
                   <p className="text-lg md:text-xl font-bold text-gray-800">
@@ -246,7 +239,6 @@ const ProfilePage = () => {
                 </div>
               </div>
 
-            
               <div>
                 <p className="font-semibold text-gray-800 mb-1 text-sm md:text-base">
                   {profileData?.name || "User"}
@@ -277,29 +269,34 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        
         <div className="grid grid-cols-3 gap-1 sm:gap-2 md:gap-4">
-          {posts.map((post) => (
-            <div
-              key={post._id}
-              className="aspect-square bg-gray-200 rounded-sm sm:rounded-md md:rounded-lg overflow-hidden cursor-pointer group relative"
-            >
-              <img
-                src={post.image}
-                alt={`Post by ${profileData?.userName}`}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-              />
-              <div className="hidden md:flex absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center">
-                <div className="flex items-center gap-2 text-white font-semibold">
-                  <span>❤️</span>
-                  <span>{post.likes.length}</span>
-                </div>
-              </div>
-            </div>
-          ))}
+          {posts.map((post) =>
+  post && post.likes ? ( // Add safety checks for post and post.likes
+    <div
+      key={post._id}
+      className="aspect-square bg-gray-200 rounded-sm sm:rounded-md md:rounded-lg overflow-hidden cursor-pointer group relative"
+    >
+      <img
+        src={post.media}
+        alt={`Post by ${profileData?.userName}`}
+        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+      />
+      <div className="hidden md:flex absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center">
+        <div className="flex items-center gap-2 text-white font-semibold">
+          <span>❤️</span>
+          <span>{post.likes.length}</span> {/* Safe to access now */}
+        </div>
+      </div>
+    </div>
+  ) : (
+    <div key={post._id} className="text-center text-red-500">
+      Error loading post
+    </div>
+  )
+)}
+        
         </div>
 
-        
         {posts.length === 0 && (
           <div className="bg-white rounded-xl shadow-sm p-8 md:p-12 text-center">
             <div className="w-20 h-20 md:w-24 md:h-24 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
@@ -309,13 +306,13 @@ const ProfilePage = () => {
               No Posts Yet
             </h3>
             <p className="text-sm md:text-base text-gray-600">
-              When {profileData?.userName || "this user"} shares photos, they'll appear here.
+              When {profileData?.userName || "this user"} shares photos, they'll
+              appear here.
             </p>
           </div>
         )}
       </div>
 
-      
       <div className="h-24 lg:hidden"></div>
     </div>
   );

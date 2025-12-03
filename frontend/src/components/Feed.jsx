@@ -7,6 +7,7 @@ import { useSelector } from 'react-redux';
 const Feed = () => {
   // ✅ Fixed: Properly access posts from Redux with optional chaining
   const posts = useSelector((state) => state.post?.postData.posts) || [];
+  const user = useSelector((state) => state.user?.userData) || {};
   
   console.log("Posts in Feed component:", posts);
 

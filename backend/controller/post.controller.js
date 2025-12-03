@@ -19,6 +19,7 @@ const uploadPost = async (req, res) => {
       media,
       caption,
       author: req.userId,
+      likes: [],
     });
     const user = await User.findById(req.userId);
     user.posts.push(newPost._id);
@@ -56,6 +57,11 @@ const getAllPosts = async (req, res) => {
       .populate("author", "name userName profileImage")
       .populate("comments.author", "name userName profileImage")
       .sort({ createdAt: -1 });
+      posts.forEach((post) => {
+      if (!post.likes) {
+        post.likes = [];
+      }
+    });
     return res.status(200).json({ posts });
   } catch (error) {
     console.error("Error fetching posts:", error);
