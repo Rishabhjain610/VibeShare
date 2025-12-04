@@ -5,7 +5,7 @@ const getCurrentUser = async (req, res) => {
   try {
     const user = await User.findById(req.userId)
       .select("-password")
-      .populate("posts reels");
+      .populate("posts reels saved saved.author");
     return res.status(200).json({ user });
   } catch (error) {
     console.error("Error fetching current user:", error);

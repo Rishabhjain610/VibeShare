@@ -12,7 +12,9 @@ const UseGetCurrentUser = () => {
       const response = await axios.get(`${serverUrl}/api/user/current`, {
         withCredentials: true,
       });
+     
       dispatch(setUserData(response.data.user));
+      
     } catch (error) {
       console.error("Error fetching current user:", error);
     }

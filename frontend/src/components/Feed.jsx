@@ -9,7 +9,7 @@ const Feed = () => {
   const posts = useSelector((state) => state.post?.postData.posts) || [];
   const user = useSelector((state) => state.user?.userData) || {};
   
-  console.log("Posts in Feed component:", posts);
+ 
 
   // Placeholder data for stories
   const stories = [

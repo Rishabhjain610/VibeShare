@@ -1,5 +1,4 @@
-
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { Heart, MessageCircle, Bookmark, MoreHorizontal } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
@@ -13,18 +12,31 @@ const Post = ({ post }) => {
   const { serverUrl } = useContext(AuthDataContext);
   const dispatch = useDispatch();
 
-  // --- STATE DERIVED FROM REDUX (for User object properties) ---
   const isFollowing = user.following?.includes(post.author?._id) || false;
-  const isSaved = user.saved?.includes(post._id) || false;
 
-  // --- LOCAL STATE (for Post object properties & UI) ---
+  // FIX 1: Use local state with .some() for proper ObjectId comparison
+  const [saved, setSaved] = useState(
+    user.saved?.some(
+      (savedPost) => String(savedPost._id) === String(post._id)
+    ) || false
+  );
+
   const [liked, setLiked] = useState(post.likes?.includes(user._id) || false);
   const [likesCount, setLikesCount] = useState(post.likes?.length || 0);
   const [comments, setComments] = useState(post.comments || []);
   const [message, setMessage] = useState("");
   const [showAllComments, setShowAllComments] = useState(false);
+  //includes compares strings in array and not Object
+  // Debug logs
 
-  // --- HANDLERS ---
+  // FIX 2: Sync local state with Redux when user.saved changes
+  useEffect(() => {
+    const isSavedInRedux =
+      user.saved?.some(
+        (savedPost) => String(savedPost._id) === String(post._id)
+      ) || false;
+    setSaved(isSavedInRedux);
+  }, [user.saved, post._id]);
 
   const handleFollow = async () => {
     try {
@@ -34,7 +46,6 @@ const Post = ({ post }) => {
         {},
         { withCredentials: true }
       );
-      // Update the central user state in Redux
       if (response.data.currentUser) {
         dispatch(setUserData(response.data.currentUser));
       }
@@ -44,6 +55,10 @@ const Post = ({ post }) => {
   };
 
   const handleSave = async () => {
+    // FIX 3: Optimistic UI update (instant feedback)
+    const previousSaved = saved;
+    setSaved(!previousSaved);
+
     try {
       const postId = post._id;
       const response = await axios.post(
@@ -51,22 +66,27 @@ const Post = ({ post }) => {
         {},
         { withCredentials: true }
       );
-      // Update the central user state in Redux
-      if (response.data.savedPosts) {
-        const updatedUser = { ...user, saved: response.data.savedPosts };
-        dispatch(setUserData(updatedUser));
+
+      console.log("Save/Unsave response:", response.data.user);
+
+      // FIX 4: Dispatch the COMPLETE user object, not just saved array
+      if (response.data.user) {
+        dispatch(setUserData(response.data.user));
       }
     } catch (error) {
       console.error("Error saving/unsaving post:", error);
+      // Revert on error
+      setSaved(previousSaved);
     }
   };
 
   const handleLike = async () => {
-    // Optimistic UI update using local state
     const previousLiked = liked;
     const previousLikesCount = likesCount;
     setLiked(!previousLiked);
-    setLikesCount(previousLiked ? previousLikesCount - 1 : previousLikesCount + 1);
+    setLikesCount(
+      previousLiked ? previousLikesCount - 1 : previousLikesCount + 1
+    );
 
     try {
       const postId = post._id;
@@ -75,10 +95,8 @@ const Post = ({ post }) => {
         {},
         { withCredentials: true }
       );
-      // No need to process response if optimistic update is sufficient
     } catch (error) {
       console.error("Error liking/unliking post:", error);
-      // Revert on error
       setLiked(previousLiked);
       setLikesCount(previousLikesCount);
     }
@@ -86,13 +104,13 @@ const Post = ({ post }) => {
 
   const handleComment = async (e) => {
     e.preventDefault();
+    if (!message.trim()) return;
     try {
       const result = await axios.post(
         `${serverUrl}/api/post/comment/${post._id}`,
         { comment: message },
         { withCredentials: true }
       );
-      // Update local comments state from server response
       const updatedPostData = result.data.post;
       setComments(updatedPostData.comments || []);
       setMessage("");
@@ -123,7 +141,11 @@ const Post = ({ post }) => {
           {user._id !== post.author?._id && (
             <button
               onClick={handleFollow}
-              className={`${isFollowing ? "text-red-500" : "text-purple-600"} font-bold text-sm hover:${isFollowing ? "text-black" : "text-purple-800"}`}
+              className={`${
+                isFollowing ? "text-red-500" : "text-purple-600"
+              } font-bold text-sm hover:${
+                isFollowing ? "text-black" : "text-purple-800"
+              }`}
             >
               {isFollowing ? "Unfollow" : "Follow"}
             </button>
@@ -155,7 +177,7 @@ const Post = ({ post }) => {
               {liked ? (
                 <Heart
                   size={24}
-                  className="text-red-500 fill-red-500 transition-colors"
+                  className="text-red-500 fill-red-500 transition-transform duration-200 ease-in-out transform active:scale-125"
                 />
               ) : (
                 <Heart
@@ -164,7 +186,11 @@ const Post = ({ post }) => {
                 />
               )}
             </button>
-            <button onClick={() => document.getElementById(`comment-input-${post._id}`)?.focus()}>
+            <button
+              onClick={() =>
+                document.getElementById(`comment-input-${post._id}`)?.focus()
+              }
+            >
               <MessageCircle
                 size={24}
                 className="text-gray-700 hover:text-gray-900 transition-colors"
@@ -172,10 +198,10 @@ const Post = ({ post }) => {
             </button>
           </div>
           <button onClick={handleSave}>
-            {isSaved ? (
+            {saved ? (
               <Bookmark
                 size={24}
-                className="text-purple-600 fill-purple-600 transition-colors"
+                className="text-purple-600 fill-purple-600 transition-transform duration-200 ease-in-out transform active:scale-125"
               />
             ) : (
               <Bookmark
@@ -189,18 +215,22 @@ const Post = ({ post }) => {
         <p className="font-semibold text-sm text-gray-800 mb-1">
           {likesCount} likes
         </p>
-        <p className="text-sm text-gray-700">
+        <p className="text-sm text-gray-700 break-words">
           <span className="font-semibold text-gray-800 mr-2">
             {post.author?.userName || "user"}
           </span>
           {post.caption || ""}
         </p>
-        <p
-          className="text-xs text-gray-500 hover:underline mt-1 block cursor-pointer"
-          onClick={() => setShowAllComments(!showAllComments)}
-        >
-          {showAllComments ? "Hide comments" : `View all ${comments.length} comments`}
-        </p>
+        {comments.length > 0 && (
+          <p
+            className="text-xs text-gray-500 hover:underline mt-1 block cursor-pointer"
+            onClick={() => setShowAllComments(!showAllComments)}
+          >
+            {showAllComments
+              ? "Hide comments"
+              : `View all ${comments.length} comments`}
+          </p>
+        )}
       </div>
 
       <div className="border-t border-gray-200 px-3 py-2 sm:px-4 sm:py-3">
@@ -215,7 +245,8 @@ const Post = ({ post }) => {
           />
           <button
             type="submit"
-            className="text-purple-600 hover:text-purple-800 font-semibold text-sm"
+            disabled={!message.trim()}
+            className="text-purple-600 hover:text-purple-800 font-semibold text-sm disabled:text-gray-400 disabled:cursor-not-allowed"
           >
             Post
           </button>
@@ -223,19 +254,16 @@ const Post = ({ post }) => {
       </div>
 
       {showAllComments && (
-        <div className="px-3 sm:px-4 pb-2">
+        <div className="px-3 sm:px-4 pb-2 max-h-48 overflow-y-auto">
           {comments.map((comment) => (
-            <div
-              key={comment._id}
-              className="flex items-start gap-3 py-2"
-            >
+            <div key={comment._id} className="flex items-start gap-3 py-2">
               <img
                 src={comment.author?.profileImage || "/image.png"}
                 alt={comment.author?.name || "User"}
                 className="h-8 w-8 rounded-full object-cover mt-1"
               />
               <div className="flex-1">
-                <p className="text-sm">
+                <p className="text-sm break-words">
                   <span className="font-semibold text-gray-800 mr-2">
                     {comment.author?.userName || "Unknown"}
                   </span>
