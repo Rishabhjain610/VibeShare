@@ -43,7 +43,7 @@ const Reels = () => {
       {/* Vertical Scroll Container */}
       <div
         ref={containerRef}
-        className="w-full h-full overflow-y-scroll snap-y snap-mandatory scrollbar-hide"
+        className="w-full h-full overflow-y-scroll snap-y snap-mandatory scrollbar-hide"  //snap classes for scroll snapping yeh scrolling mein beech mein nhi rokega
         style={{ 
           scrollSnapType: 'y mandatory',
           WebkitOverflowScrolling: 'touch'

@@ -1,4 +1,4 @@
-import React from "react";
+import React,{useState,useEffect,useRef,useContext} from "react";
 import {
   Heart,
   MessageCircle,
@@ -11,21 +11,60 @@ import {
 } from "lucide-react";
 
 const ReelCard = ({ reel, index, isActive }) => {
+  const videoRef = useRef();
+  const [isPlaying,setIsPlaying]=useState(false);
+  useEffect(()=>{
+    const observer=new IntersectionObserver((entries)=>{
+     const video=videoRef.current;
+     if(entries.isIntersecting){
+      video.play();
+      setIsPlaying(true);
+     }else{
+      video.pause();
+      setIsPlaying(false);
+     }
+    },{threshold:0.75})
+    if(videoRef.current){
+    observer.observe(videoRef.current);
+    }
+    return ()=>{
+      if(videoRef.current){
+        observer.unobserve(videoRef.current);
+      }
+    }
+  },[]
+  )
+  const togglePlayPause = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        videoRef.current.play().catch((err) => console.log("Play error:", err));
+        setIsPlaying(true);
+      }
+    }
+  };
   return (
-    <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-b from-black via-black to-purple-900">
+    <div className="relative w-full h-full flex items-center justify-center gap-2">
       <div className="relative w-full max-w-md h-full bg-black">
         <video
           src={reel.media}
+          ref={videoRef}
           className="absolute inset-0 w-full h-full object-cover"
           loop
           playsInline
+          onClick={togglePlayPause}
+          
         />
 
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-16 h-16 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center">
-            <Play className="w-8 h-8 text-white ml-1" fill="white" />
+        {!isPlaying && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-16 h-16 bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center">
+              <Play className="w-8 h-8 text-white ml-1" fill="white" />
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent h-80 pointer-events-none" />
 
