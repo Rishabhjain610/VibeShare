@@ -13,10 +13,13 @@ import ProfilePage from "./pages/ProfilePage.jsx";
 import EditProfile from "./pages/EditProfile.jsx";
 import UploadPages from "./pages/UploadPages.jsx";
 import UseGetAllPost from "./hooks/UseGetAllPost.jsx";
+import UseGetAllReels from "./hooks/UseGetAllReels.jsx";
+import Reels from "./pages/Reels.jsx";
 const App = () => {
   UseGetCurrentUser();
   UseGetOtherUser();
   UseGetAllPost();
+  UseGetAllReels();
   const userData = useSelector((state) => state.user.userData);
 
   return (
@@ -63,6 +66,7 @@ const App = () => {
           path="/upload"
           element={userData ? <UploadPages /> : <Navigate to="/login" />}
         />
+        <Route path="/reels" element={userData ? <Reels /> : <Navigate to="/login" />} />
       </Routes>
     </>
   );
