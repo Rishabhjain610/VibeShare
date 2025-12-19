@@ -21,7 +21,7 @@ const uploadReel = async (req, res) => {
     const user = await User.findById(req.userId);
     user.reels.push(newReel._id);
     await user.save();
-    const populatedReel= await Reel.findById(newReel._id).populate(
+    const populatedReel = await Reel.findById(newReel._id).populate(
       "author",
       "name userName profileImage"
     );
@@ -33,28 +33,26 @@ const uploadReel = async (req, res) => {
 
 const getAllReels = async (req, res) => {
   try {
-    const reels=await Reel.find({}).populate(
-      "author",
-      "name userName profileImage"
-    ).populate("comments.author","name userName profileImage");
+    const reels = await Reel.find({})
+      .populate("author", "name userName profileImage")
+      .populate("comments.author", "name userName profileImage");
     return res.status(200).json(reels);
-    
   } catch (error) {
     console.error("Error fetching reels:", error);
     return res.status(500).json({ message: "getallreels error" });
   }
-}
+};
 
-const likes=async(req,res)=>{
+const likes = async (req, res) => {
   try {
-    const reelId=req.params.reelId;
-    const reel=await Reel.findById(reelId);
-    if(!reel){
-      return res.status(404).json({message: "Reel not found"});
+    const reelId = req.params.reelId;
+    const reel = await Reel.findById(reelId);
+    if (!reel) {
+      return res.status(404).json({ message: "Reel not found" });
     }
-    if(reel.likes.includes(req.userId)){
+    if (reel.likes.includes(req.userId)) {
       reel.likes.pull(req.userId);
-    }else{
+    } else {
       reel.likes.push(req.userId);
     }
     await reel.save();
@@ -63,38 +61,32 @@ const likes=async(req,res)=>{
     console.error("Error updating likes:", error);
     return res.status(500).json({ message: "Like update error" });
   }
-}
+};
 
-
-
-
-const commentOnReel=async(req,res)=>{
+const commentOnReel = async (req, res) => {
   try {
-    const reelId=req.params.reelId;
-    const {comment}=req.body;
-    const reel=await Reel.findById(reelId);
+    const reelId = req.params.reelId;
+    const { comment } = req.body;
+    const reel = await Reel.findById(reelId);
 
-    if(!reel){
-      return res.status(400).json({message:"Reel ID is required"});
+    if (!reel) {
+      return res.status(400).json({ message: "Reel ID is required" });
     }
-    const user=await User.findById(req.userId);
+    const user = await User.findById(req.userId);
     reel.comments.push({
       author: user._id,
       comment: comment,
     });
 
     await reel.save();
-    reel.populate("author", "name userName profileImage");
-    reel.populate("comments.author");
-    return res.status(200).json(reel);
+    const populatedReel = await Reel.findById(reelId)
+      .populate("author", "name userName profileImage")
+      .populate("comments.author", "name userName profileImage");
+    return res.status(200).json(populatedReel);
   } catch (error) {
     console.error("Error commenting on reel:", error);
     return res.status(500).json({ message: "Comment update error" });
   }
-}
+};
 
-
-
-
-
-export { uploadReel, getAllReels, likes, commentOnReel};
+export { uploadReel, getAllReels, likes, commentOnReel };

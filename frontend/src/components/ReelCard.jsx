@@ -9,6 +9,7 @@ import {
   Volume2,
   Play,
   VolumeX,
+  X,
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
@@ -20,7 +21,7 @@ import { useNavigate } from "react-router-dom";
 const ReelCard = ({ reel, index, isActive }) => {
   const { serverUrl } = useContext(AuthDataContext);
   const videoRef = useRef();
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [muted, setMuted] = useState(false);
   const dispatch = useDispatch();
   const userData = useSelector((state) => state.user.userData);
@@ -32,12 +33,12 @@ const ReelCard = ({ reel, index, isActive }) => {
   const navigate = useNavigate();
   const isFollowing = userData.following?.includes(reel.author?._id) || false;
 
- 
   const [liked, setLiked] = useState(
     reel.likes?.includes(userData._id) || false
   );
   const [showHeart, setShowHeart] = useState(false);
   const [likesCount, setLikesCount] = useState(reel.likes?.length || 0);
+  
   const handletimeupdate = () => {
     const video = videoRef.current;
     if (video) {
@@ -54,13 +55,29 @@ const ReelCard = ({ reel, index, isActive }) => {
       setShowHeart(false);
     }, 1000);
   };
+  const commentRef = useRef();
+  useEffect(()=>{
+    const handleClickOutside=(e)=>{
+                                //kahi bahar click kiya to comment section band ho jaye
+      if(commentRef.current && !commentRef.current.contains(e.target)){
+        setShowComment(false);
+      }//cross ke alawa kahi bhi click karne par comment section band ho jaye
+    }
+    if(showComment){
+      document.addEventListener("mousedown",handleClickOutside);
+    }
+    else{
+      document.removeEventListener("mousedown",handleClickOutside);
+    }
 
+  },[showComment])
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         const video = videoRef.current;
-
-        if (entries.isIntersecting) {
+        
+        //sab video play hote hai ek saath to stop that we do this
+        if (entries[0].isIntersecting) {
           video.play();
           setIsPlaying(true);
         } else {
@@ -68,7 +85,7 @@ const ReelCard = ({ reel, index, isActive }) => {
           setIsPlaying(false);
         }
       },
-      { threshold: 0.75 }
+      { threshold: 0.75 } //75% of the video should be visible to play
     );
     if (videoRef.current) {
       observer.observe(videoRef.current);
@@ -79,6 +96,7 @@ const ReelCard = ({ reel, index, isActive }) => {
       }
     };
   }, []);
+
   const togglePlayPause = () => {
     if (videoRef.current) {
       if (isPlaying) {
@@ -100,7 +118,6 @@ const ReelCard = ({ reel, index, isActive }) => {
         { withCredentials: true }
       );
 
-      // ✅ Same as Post.jsx - dispatch full user object
       if (response.data.currentUser) {
         dispatch(setUserData(response.data.currentUser));
       }
@@ -139,38 +156,40 @@ const ReelCard = ({ reel, index, isActive }) => {
       setLikesCount(previousLikesCount);
     }
   };
-   const handlePostComment = async (e) => {
-    e.preventDefault();
-    if (!newComment.trim()) return;
+  const handlePostComment = async (e) => {
+  e.preventDefault(); // Prevent form submission from reloading the page
 
-    const optimisticComment = {
-      _id: Date.now().toString(),
-      text: newComment,
-      author: {
-        _id: userData._id,
-        userName: userData.userName,
-        profileImage: userData.profileImage,
-      },
-      createdAt: new Date().toISOString(),
-    };
+  // Validate the comment input
+  if (!newComment.trim()) {
+    console.error("Comment cannot be empty");
+    return;
+  }
 
-    setComments((prev) => [...prev, optimisticComment]);
-    setNewComment("");
+  try {
+    const reelId = reel._id;
 
-    try {
-      const response = await axios.post(
-        `${serverUrl}/api/reel/comment/${reel._id}`,
-        { text: newComment },
-        { withCredentials: true }
-      );
-      setComments(response.data.reel.comments);
-    } catch (error) {
-      console.error("Error posting comment:", error);
-      setComments((prev) =>
-        prev.filter((comment) => comment._id !== optimisticComment._id)
-      );
-    }
-  };
+    // Send the comment to the backend
+    const response = await axios.post(
+      `${serverUrl}/api/reel/comment/${reelId}`,
+      { comment: newComment },
+      { withCredentials: true }
+    );
+
+    // Update the comments state with the new comments array from the backend
+    setComments(response.data.comments || []);
+    dispatch(setReelData(
+      reelData.map((r) =>
+        r._id === reel._id ? { ...r, comments: response.data.comments } : r
+      )
+    ));
+    setNewComment(""); // Clear the input field
+  } catch (error) {
+    console.error("Error posting comment:", error);
+
+    // Optional: Show user feedback for the error
+    alert("Failed to post comment. Please try again.");
+  }
+};
 
   return (
     <div className="relative w-full h-full flex items-center justify-center gap-2 overflow-hidden ">
@@ -240,13 +259,21 @@ const ReelCard = ({ reel, index, isActive }) => {
               {likesCount}
             </span>
           </button>
-       
+          <button
+            className="flex flex-col items-center gap-0.5"
+            onClick={() => setShowComment(true)} // Opens the comment section
+          >
+            <MessageCircle size={24} className="text-white" />
+            <span className="text-white text-xs font-semibold">
+              {comments.length}
+            </span>
+          </button>
 
           <button>
             <Bookmark className="w-6 h-6 text-white" />
           </button>
         </div>
-           
+
         <div className="absolute bottom-0 left-0 right-0 p-3 pb-16 z-10 pr-16">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-white font-semibold text-sm">
@@ -284,8 +311,8 @@ const ReelCard = ({ reel, index, isActive }) => {
             <Volume2 className="w-4 h-4 text-white" />
           )}
         </button>
-       {showComment && (
-          <div className="absolute bottom-0 left-0 right-0 z-30 bg-[#0e1718] rounded-t-2xl transition-transform duration-300 ease-in-out">
+        {showComment && (
+          <div ref={commentRef} className="absolute bottom-0 left-0 right-0 z-30 bg-[#0e1718] rounded-t-2xl transition-transform duration-300 ease-in-out">
             <div className="relative p-4 border-b border-gray-700 text-center">
               <h3 className="text-white font-semibold">
                 Comments ({comments.length})
@@ -298,7 +325,7 @@ const ReelCard = ({ reel, index, isActive }) => {
               </button>
             </div>
 
-            <div className="overflow-y-auto h-[calc(100%-120px)] p-4">
+            <div className="overflow-y-auto max-h-[300px] p-4 space-y-4">
               {comments.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-gray-500">
                   No comments yet.
@@ -307,23 +334,21 @@ const ReelCard = ({ reel, index, isActive }) => {
                 comments.map((comment) => (
                   <div
                     key={comment._id}
-                    className="flex items-start gap-3 mb-4"
+                    className="flex items-start gap-3 bg-gray-800 p-3 rounded-lg"
                   >
                     <img
                       src={comment.author?.profileImage || "/image.png"}
                       alt={comment.author?.userName}
-                      className="w-8 h-8 rounded-full object-cover"
+                      className="w-10 h-10 rounded-full object-cover"
                     />
                     <div className="flex-1">
                       <p className="text-white text-sm">
                         <span className="font-semibold mr-2">
                           {comment.author?.userName}
                         </span>
-                        {comment.text}
+                        {comment.comment}
                       </p>
-                      <span className="text-gray-500 text-xs">
-                        {new Date(comment.createdAt).toLocaleString()}
-                      </span>
+                      
                     </div>
                   </div>
                 ))
@@ -332,12 +357,12 @@ const ReelCard = ({ reel, index, isActive }) => {
 
             <form
               onSubmit={handlePostComment}
-              className="absolute bottom-0 left-0 right-0 p-4 bg-[#0e1718] border-t border-gray-700 flex items-center gap-2"
+              className="flex items-center gap-3 p-4 bg-gray-900 border-t border-gray-700"
             >
               <img
                 src={userData.profileImage || "/image.png"}
                 alt="Your profile"
-                className="w-9 h-9 rounded-full object-cover"
+                className="w-10 h-10 rounded-full object-cover"
               />
               <input
                 type="text"
