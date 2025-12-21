@@ -5,7 +5,7 @@ const getCurrentUser = async (req, res) => {
   try {
     const user = await User.findById(req.userId)
       .select("-password")
-      .populate("posts reels saved saved.author");
+      .populate("posts reels saved saved.author story");
     return res.status(200).json({ user });
   } catch (error) {
     console.error("Error fetching current user:", error);
@@ -16,7 +16,7 @@ const otherUser = async (req, res) => {
   try {
     const otheruser = await User.find({ _id: { $ne: req.userId } }).select(
       "-password"
-    );
+    ).populate("posts reels story");
     return res.status(200).json({ otheruser });
   } catch (error) {
     console.error("Error fetching other users:", error);
@@ -68,7 +68,7 @@ const editProfile = async (req, res) => {
 const getprofile = async (req, res) => {
   try {
     const username = req.params.username;
-    const user = await User.findOne({ userName: username }).select("-password");
+    const user = await User.findOne({ userName: username }).select("-password").populate("posts reels saved story");
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }

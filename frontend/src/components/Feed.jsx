@@ -1,26 +1,13 @@
-import React from 'react';
-import StoryCard from './StoryCard';
-import Post from './Post';
-import { PartyPopper, Heart } from 'lucide-react';
-import { useSelector } from 'react-redux';
+import React from "react";
+import { useSelector } from "react-redux";
+import StoryCard from "./StoryCard";
+import Post from "./Post";
+import { PartyPopper, Heart } from "lucide-react";
 
 const Feed = () => {
-  // ✅ Fixed: Properly access posts from Redux with optional chaining
   const posts = useSelector((state) => state.post?.postData.posts) || [];
   const user = useSelector((state) => state.user?.userData) || {};
-  
- 
-
-  // Placeholder data for stories
-  const stories = [
-    { name: 'Your Story', profilePic: 'https://i.pravatar.cc/150?img=1' },
-    { name: 'Jane Doe', profilePic: 'https://i.pravatar.cc/150?img=26' },
-    { name: 'John Smith', profilePic: 'https://i.pravatar.cc/150?img=32' },
-    { name: 'Emily White', profilePic: 'https://i.pravatar.cc/150?img=45' },
-    { name: 'Chris Green', profilePic: 'https://i.pravatar.cc/150?img=51' },
-    { name: 'Michael Brown', profilePic: 'https://i.pravatar.cc/150?img=11' },
-    { name: 'Sarah Wilson', profilePic: 'https://i.pravatar.cc/150?img=49' },
-  ];
+  const otherUsers = useSelector((state) => state.user?.otherUsers) || [];
 
   return (
     <div className="w-full md:w-[60%] lg:w-[55%] h-screen overflow-y-auto scrollbar-hide">
@@ -39,8 +26,29 @@ const Feed = () => {
         {/* Stories Section */}
         <div className="w-full bg-white border border-gray-200 rounded-xl p-3 sm:p-4 mb-6">
           <div className="flex space-x-4 overflow-x-auto scrollbar-hide">
-            {stories.map((story, index) => (
-              <StoryCard key={index} user={story} />
+            {/* Current User's Story */}
+            <StoryCard
+              user={{
+                name: "Your Story",
+                userName: user.userName,
+                profilePic: user.profileImage || "/image.png",
+              }}
+              story={user.story || null} // Pass the user's story or null
+              isCurrentUser={true} // Indicate this is the current user
+            />
+
+            {/* Other Users' Stories */}
+            {otherUsers.map((otherUser, index) => (
+              <StoryCard
+                key={index}
+                user={{
+                  name: otherUser.name,
+                  profilePic: otherUser.profileImage || "/image.png",
+                  userName: otherUser.userName,
+                }}
+                story={otherUser.story || null} // Pass the other user's story or null
+                isCurrentUser={false} // Indicate this is not the current user
+              />
             ))}
           </div>
         </div>
@@ -48,9 +56,7 @@ const Feed = () => {
         {/* Posts Section */}
         <div className="pb-24">
           {posts && posts.length > 0 ? (
-            posts.map((post) => (
-              <Post key={post._id} post={post} />
-            ))
+            posts.map((post) => <Post key={post._id} post={post} />)
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">

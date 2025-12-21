@@ -14,6 +14,7 @@ import EditProfile from "./pages/EditProfile.jsx";
 import UploadPages from "./pages/UploadPages.jsx";
 import UseGetAllPost from "./hooks/UseGetAllPost.jsx";
 import UseGetAllReels from "./hooks/UseGetAllReels.jsx";
+import Story from "./components/Story.jsx";
 import Reels from "./pages/Reels.jsx";
 const App = () => {
   UseGetCurrentUser();
@@ -61,6 +62,10 @@ const App = () => {
         <Route
           path="/edit-profile"
           element={userData ? <EditProfile /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/story/:username"
+          element={userData ? <Story /> : <Navigate to="/login" />}
         />
         <Route
           path="/upload"

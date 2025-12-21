@@ -199,7 +199,7 @@ const UploadPages = () => {
         ? [newStory, ...storyData]
         : [newStory];
       
-      dispatch(setStoryData(updatedStories));
+      setStoryData(prev => ({...prev, story: response.data.story}));
       toast.success("Story uploaded successfully!");
       
       // Reset states and navigate
