@@ -14,6 +14,7 @@ import EditProfile from "./pages/EditProfile.jsx";
 import UploadPages from "./pages/UploadPages.jsx";
 import UseGetAllPost from "./hooks/UseGetAllPost.jsx";
 import UseGetAllReels from "./hooks/UseGetAllReels.jsx";
+import UseGetAllStories from "./hooks/UseGetAllStories.jsx";
 import Story from "./components/Story.jsx";
 import Reels from "./pages/Reels.jsx";
 const App = () => {
@@ -21,6 +22,7 @@ const App = () => {
   UseGetOtherUser();
   UseGetAllPost();
   UseGetAllReels();
+  UseGetAllStories();
   const userData = useSelector((state) => state.user.userData);
 
   return (

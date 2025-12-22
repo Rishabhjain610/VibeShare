@@ -10,16 +10,14 @@ const Story = () => {
   const { username } = useParams();
 
   const { serverUrl } = useContext(AuthDataContext);
-  const { storyData, setStoryData } = useContext(StoryDataContext); 
+  const { storyData, setStoryData } = useContext(StoryDataContext);
   const fetchStory = async () => {
     try {
       const result = await axios.get(
         `${serverUrl}/api/story/getstory/${username}`,
         { withCredentials: true }
       );
-      setStoryData(result.data)
-       console.log("Fetched story data:", result.data);
-      
+      setStoryData(result.data);
     } catch (error) {
       console.error("Error fetching story data:", error);
     }
@@ -28,12 +26,8 @@ const Story = () => {
   // Only prevent state updates after unmount, don't clear the story
   useEffect(() => {
     fetchStory();
-   
   }, [username, serverUrl]); // Removed 'dispatch' from dependencies
 
-  
-
-  
   return (
     <div>
       {storyData ? (

@@ -5,32 +5,30 @@ import { AuthDataContext } from "../context/AuthContext";
 import { useDispatch, useSelector } from "react-redux";
 import { setReelData } from "../redux/reelSlice";
 import { setStoryList } from "../redux/storySlice.js";
-const UseGetAllReels = () => {
+const UseGetAllStories = () => {
   const { serverUrl } = useContext(AuthDataContext);
   const dispatch = useDispatch();
-  const reelData = useSelector((state) => state.reel.reelData);
-  const userData = useSelector((state) => state.user.userData);
   const storyList = useSelector((state) => state.story.storyList);
+  const userData = useSelector((state) => state.user.userData);
   const [loading, setLoading] = useState(false);
-  const fetchReels = async () => {
+  const fetchStories=async()=>{
     setLoading(true);
     try {
-      const response = await axios.get(`${serverUrl}/api/reel/getallreels`, {
+      const response = await axios.get(`${serverUrl}/api/story/followedstories`, {
         withCredentials: true,
       });
-
-      dispatch(setReelData(response.data));
-
-      setLoading(false); 
+      console.log("Fetched Stories:", response.data);
+      dispatch(setStoryList(response.data));
+      setLoading(false);
     } catch (error) {
-      console.error("Error fetching reels:", error);
+      console.error("Error fetching stories:", error);
       setLoading(false);
     }
-  };
+  }
   useEffect(() => {
-    fetchReels();
+    fetchStories();
   }, [serverUrl, dispatch]);
-  return <div>UseGetAllReels</div>;
+   return <div>UseGetAllStories</div>;
 };
 
-export default UseGetAllReels;
+export default UseGetAllStories;

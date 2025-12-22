@@ -1,13 +1,15 @@
 import React from "react";
-import { useSelector } from "react-redux";
+import { useSelector,useDispatch   } from "react-redux";
 import StoryCard from "./StoryCard";
 import Post from "./Post";
 import { PartyPopper, Heart } from "lucide-react";
 
 const Feed = () => {
+  const dispatch = useDispatch();
   const posts = useSelector((state) => state.post?.postData.posts) || [];
   const user = useSelector((state) => state.user?.userData) || {};
-  const otherUsers = useSelector((state) => state.user?.otherUsers) || [];
+  const otherUsers = useSelector((state) => state.story?.storyList) || [];
+  
 
   return (
     <div className="w-full md:w-[60%] lg:w-[55%] h-screen overflow-y-auto scrollbar-hide">
@@ -42,11 +44,11 @@ const Feed = () => {
               <StoryCard
                 key={index}
                 user={{
-                  name: otherUser.name,
-                  profilePic: otherUser.profileImage || "/image.png",
-                  userName: otherUser.userName,
+                  name: otherUser.author.name,
+                  profilePic: otherUser.author.profileImage || "/image.png",
+                  userName: otherUser.author.userName,
                 }}
-                story={otherUser.story || null} // Pass the other user's story or null
+                story={otherUser} // Pass the other user's story or null
                 isCurrentUser={false} // Indicate this is not the current user
               />
             ))}
