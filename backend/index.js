@@ -6,6 +6,7 @@ import Userrouter from './routes/user.routes.js';
 import Postrouter from './routes/post.routes.js';
 import ReelRouter from './routes/reels.routes.js';
 import StoryRouter from './routes/story.routes.js';
+import MessageRouter from './routes/message.routes.js';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 dotenv.config();
@@ -25,6 +26,7 @@ app.use("/api/user",Userrouter);
 app.use("/api/post",Postrouter);
 app.use("/api/reel",ReelRouter);
 app.use("/api/story",StoryRouter);
+app.use("/api/message",MessageRouter);
 app.listen(process.env.PORT,()=>{
     console.log(`Server running on port ${process.env.PORT}`);
 })
