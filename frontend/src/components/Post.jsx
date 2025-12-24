@@ -1,13 +1,13 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useContext, useEffect,  } from "react";
 import { Heart, MessageCircle, Bookmark, MoreHorizontal } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
 import { AuthDataContext } from "../context/AuthContext";
 import { setUserData } from "../redux/userSlice.js";
-
+import { useNavigate } from "react-router-dom";
 const Post = ({ post }) => {
   if (!post) return null;
-
+  const navigate = useNavigate();
   const user = useSelector((state) => state.user?.userData) || {};
   const { serverUrl } = useContext(AuthDataContext);
   const dispatch = useDispatch();
@@ -122,7 +122,7 @@ const Post = ({ post }) => {
   return (
     <div className="bg-white border border-gray-200 rounded-xl mb-6">
       <div className="flex items-center justify-between p-3 sm:p-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3" onClick={() => navigate(`/profile/${post.author?.userName}`)}>
           <img
             className="h-10 w-10 rounded-full object-cover"
             src={post.author?.profileImage || "/image.png"}

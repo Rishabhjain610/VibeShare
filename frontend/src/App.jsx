@@ -15,7 +15,9 @@ import UploadPages from "./pages/UploadPages.jsx";
 import UseGetAllPost from "./hooks/UseGetAllPost.jsx";
 import UseGetAllReels from "./hooks/UseGetAllReels.jsx";
 import UseGetAllStories from "./hooks/UseGetAllStories.jsx";
+import Messages from "./pages/Messages.jsx";
 import Story from "./components/Story.jsx";
+import MessageArea from "./components/MessageArea.jsx";
 import Reels from "./pages/Reels.jsx";
 const App = () => {
   UseGetCurrentUser();
@@ -72,6 +74,14 @@ const App = () => {
         <Route
           path="/upload"
           element={userData ? <UploadPages /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/messages"
+          element={userData ? <Messages /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/messagearea"
+          element={userData ? <MessageArea /> : <Navigate to="/login" />}
         />
         <Route path="/reels" element={userData ? <Reels /> : <Navigate to="/login" />} />
       </Routes>

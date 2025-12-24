@@ -126,7 +126,7 @@ const UploadPages = () => {
     }
   };
 
-  // ✅ API call function for uploading REEL
+  
   const uploadReel = async () => {
     try {
       setLoading(true);

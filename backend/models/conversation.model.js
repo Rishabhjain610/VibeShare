@@ -30,6 +30,10 @@ const consversationSchema = new Schema(
         ref: "User",
       },
     ],
+    lastMessage:{
+      type: Schema.Types.ObjectId,
+      ref: "Message",
+    },
     chatSummary: {
       type: String,
       default: "",

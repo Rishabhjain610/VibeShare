@@ -40,6 +40,7 @@ const sendMessage = async (req, res) => {
     });
 
     conversation.messages.push(newMessage._id);
+    conversation.lastMessage = newMessage._id;
     await conversation.save();
 
     res.status(201).json({ message: "Message sent successfully", newMessage });
@@ -83,8 +84,8 @@ const getPrevUserChats = async (req, res) => {
     const conversations = await Conversation.find({
       participants: currentUserId,
     })
-      .populate("participants", "name userName profileImage")
-      .sort({ updatedAt: -1 });
+      .populate("participants", "name userName profileImage").populate("lastMessage","sender message createdAt")
+      .sort({ updatedAt: -1 }).limit(20);
 
     conversations.forEach((conversation) => {
       conversation.participants = conversation.participants.filter(
@@ -123,7 +124,7 @@ const createGroupChat = async (req, res) => {
       groupAdmins: [admin],
     });
     await newGroupChat.populate("participants", "name userName profileImage");
-    await newGroupChat.populate("groupAdmin", "name userName profileImage");
+    await newGroupChat.populate("groupAdmins", "name userName profileImage");
     return res.status(201).json({
       message: "Group chat created successfully",
       groupChat: newGroupChat,
@@ -165,6 +166,7 @@ const sendmessageingrp = async (req, res) => {
     });
 
     conversation.messages.push(newMessage._id);
+    conversation.lastMessage = newMessage._id;
     await conversation.save();
 
     res.status(201).json({ message: "Message sent", newMessage });
