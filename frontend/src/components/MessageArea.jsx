@@ -1,13 +1,16 @@
 import React, { useState, useRef, useContext, useEffect } from "react";
-import { useSelector,useDispatch } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Send, Smile, Image, X } from "lucide-react";
 import axios from "axios";
 import { AuthDataContext } from "../context/AuthContext";
 import { setMessages } from "../redux/messageSlice.js";
+import SenderMessage from "./SenderMessage.jsx";
+import ReceiverMessage from "./ReceiverMessage.jsx";
 const MessageArea = () => {
   const navigate = useNavigate();
   const { selectedUser, messages } = useSelector((state) => state.message);
+  const userData = useSelector((state) => state.user.userData);
   const [message, setMessage] = useState("");
   const [frontendImage, setFrontendImage] = useState(null);
   const [backendImage, setBackendImage] = useState(null);
@@ -29,30 +32,51 @@ const MessageArea = () => {
       imageInputRef.current.value = ""; // Reset file input
     }
   };
-
+  const getAllMessages = async () => {
+    try {
+      const result = await axios.get(
+        `${serverUrl}/api/message/messages/${selectedUser._id}`,
+        { withCredentials: true }
+      );
+      dispatch(setMessages(result.data.newMessage));
+      console.log("Fetched messages:", result.data.newMessage);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+    }
+  };
+  useEffect(() => {
+    if (selectedUser) {
+      getAllMessages();
+    }
+  }, [selectedUser]);
   const handleSendMessage = async (e) => {
     e.preventDefault();
+    const formData = new FormData();
+    if (backendImage) {
+      formData.append("images", backendImage);
+    }
+    formData.append("message", message);
     try {
       const result = await axios.post(
         `${serverUrl}/api/message/send/${selectedUser._id}`,
+        formData,
         {
-          message,
-        },
-        { withCredentials: true }
+          headers: { "Content-Type": "multipart/form-data" },
+          withCredentials: true,
+        }
       );
+      // Update messages in the Redux store
+
       console.log("Message sent:", result.data);
-      dispatch(setMessages([...messages,result.data.newMessages]));
+      dispatch(setMessages([...(messages || []), result.data.newMessage]));
+
       setMessage("");
       handleRemoveImage();
-
     } catch (error) {
       console.error("Error sending message:", error);
-
     }
-    // Clear images after sending
   };
 
-  // If no user is selected (e.g., direct navigation), show a placeholder.
   if (!selectedUser) {
     return (
       <div className="flex flex-col h-screen bg-white items-center justify-center text-gray-500">
@@ -71,7 +95,6 @@ const MessageArea = () => {
 
   return (
     <div className="flex flex-col h-screen bg-white text-gray-800">
-      {/* Chat Header */}
       <div className="flex items-center p-3 border-b border-gray-200 bg-white sticky top-0 z-10">
         <button
           onClick={() => navigate(-1)}
@@ -90,19 +113,18 @@ const MessageArea = () => {
           <p className="text-sm text-gray-500">@{selectedUser.userName}</p>
         </div>
       </div>
-
-      {/* Messages Area */}
       <div className="flex-1 p-4 overflow-y-auto bg-gray-50">
-        {/* Placeholder for chat messages */}
-        <div className="flex flex-col items-center justify-center h-full text-center text-gray-400">
-          <p className="font-medium">
-            This is the beginning of your conversation with {selectedUser.name}.
-          </p>
-          <p className="text-sm">Messages you send will appear here.</p>
-        </div>
+        {messages &&
+          messages.map((msg) => {
+            // Add the 'return' keyword here
+            return msg.sender?._id === userData._id ? (
+              <SenderMessage message={msg} key={msg._id} />
+            ) : (
+              <ReceiverMessage message={msg} key={msg._id} />
+            );
+          })}
       </div>
-
-      {/* Message Input Section */}
+      .
       <div className="border-t border-gray-200 bg-white">
         {frontendImage && (
           <div className="p-4 relative w-fit">

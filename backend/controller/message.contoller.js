@@ -38,7 +38,8 @@ const sendMessage = async (req, res) => {
       message: message || "",
       images: images || [],
     });
-
+    await newMessage.populate("sender", "name userName profileImage");
+    await newMessage.populate("receiver", "name userName profileImage");
     conversation.messages.push(newMessage._id);
     conversation.lastMessage = newMessage._id;
     await conversation.save();
@@ -68,10 +69,10 @@ const getMessages = async (req, res) => {
     });
 
     if (!conversation) {
-      return res.status(200).json({ messages: [] });
+      return res.status(200).json({ newMessage: [] });
     }
 
-    res.status(200).json({ messages: conversation.messages });
+    res.status(200).json({ newMessage: conversation.messages });
   } catch (error) {
     console.error("getMessages error:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -84,8 +85,10 @@ const getPrevUserChats = async (req, res) => {
     const conversations = await Conversation.find({
       participants: currentUserId,
     })
-      .populate("participants", "name userName profileImage").populate("lastMessage","sender message createdAt")
-      .sort({ updatedAt: -1 }).limit(20);
+      .populate("participants", "name userName profileImage")
+      .populate("lastMessage", "sender message createdAt")
+      .sort({ updatedAt: -1 })
+      .limit(20);
 
     conversations.forEach((conversation) => {
       conversation.participants = conversation.participants.filter(
@@ -359,26 +362,27 @@ const leaveGroup = async (req, res) => {
   }
 };
 
-const deletegrp=async(req,res)=>{
+const deletegrp = async (req, res) => {
   try {
-    const {groupId}=req.params;
-    const userId=req.userId;
-    const conversation=await Conversation.findById(groupId);
-    if(!conversation || !conversation.isGroupChat){
-      return res.status(404).json({message:"Group not found"});
+    const { groupId } = req.params;
+    const userId = req.userId;
+    const conversation = await Conversation.findById(groupId);
+    if (!conversation || !conversation.isGroupChat) {
+      return res.status(404).json({ message: "Group not found" });
     }
-    if(!isAdmin(conversation,userId)){
-      return res.status(403).json({message:"Only group admins can delete the group."});
+    if (!isAdmin(conversation, userId)) {
+      return res
+        .status(403)
+        .json({ message: "Only group admins can delete the group." });
     }
     await Message.deleteMany({ _id: { $in: conversation.messages } });
     await Conversation.findByIdAndDelete(groupId);
-    res.status(200).json({message:"Group deleted successfully"});
+    res.status(200).json({ message: "Group deleted successfully" });
   } catch (error) {
-    console.error("deletegrp error:",error);
-    res.status(500).json({message:"Internal server error"});
-    
+    console.error("deletegrp error:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
-}
+};
 
 export {
   sendMessage,
