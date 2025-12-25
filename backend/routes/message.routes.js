@@ -14,7 +14,7 @@ import {
   deletegrp,
 } from "../controller/message.contoller.js";
 import isAuth from "../middleware/auth.middleware.js";
-import upload from "../middleware/multer.middleware.js"
+import upload from "../middleware/multer.middleware.js";
 const MessageRouter = express.Router();
 
 // Direct Messages
@@ -29,7 +29,12 @@ MessageRouter.get("/chats", isAuth, getPrevUserChats); // Get previous user chat
 
 // Group Chats
 MessageRouter.post("/groups", isAuth, createGroupChat); // Create a new group chat
-MessageRouter.post("/groups/:groupId/messages", isAuth, sendmessageingrp); // Send a message in a group
+MessageRouter.post(
+  "/groups/:groupId/messages",
+  isAuth,
+  upload.single("images"),
+  sendmessageingrp
+); // Send a message in a group
 MessageRouter.get("/groups/:groupId/messages", isAuth, getGroupMessages); // Get all messages in a group
 MessageRouter.patch("/groups/:groupId/name", isAuth, renameGroup); // Rename a group
 MessageRouter.post(

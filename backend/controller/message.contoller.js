@@ -121,7 +121,7 @@ const createGroupChat = async (req, res) => {
       });
     }
     const newGroupChat = await Conversation.create({
-      chatName: groupName,
+      groupName: groupName,
       isGroupChat: true,
       participants: allParticipants,
       groupAdmins: [admin],
@@ -167,7 +167,7 @@ const sendmessageingrp = async (req, res) => {
       message: message || "",
       images: images || [],
     });
-
+    await newMessage.populate("sender", "name userName profileImage");
     conversation.messages.push(newMessage._id);
     conversation.lastMessage = newMessage._id;
     await conversation.save();
@@ -281,10 +281,10 @@ const promoteToAdmin = async (req, res) => {
     if (!userToPromote) {
       return res.status(404).json({ message: "User not found" });
     }
-    if (!isMember(conversation, userToPromote._id)) {
+    if (!isMember(conversation, userToPromote._id.toString())) {
       return res.status(400).json({ message: "User is not a group member." });
     }
-    if (isAdmin(conversation, userToPromote._id)) {
+    if (isAdmin(conversation, userToPromote._id.toString()  )) {
       return res.status(400).json({ message: "User is already an admin." });
     }
     conversation.groupAdmins.push(userToPromote._id);
@@ -321,7 +321,7 @@ const demoteAdmin = async (req, res) => {
     if (!userToDemote) {
       return res.status(404).json({ message: "User not found" });
     }
-    if (!isAdmin(conversation, userToDemote._id)) {
+    if (!isAdmin(conversation, userToDemote._id.toString())) {
       return res.status(400).json({ message: "User is not an admin." });
     }
     conversation.groupAdmins = conversation.groupAdmins.filter(

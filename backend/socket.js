@@ -14,5 +14,20 @@ const io=new Server(server,{
 
 const useSocketMap={};//map to store userId and socketId
 
+io.on("connection",(socket)=>{
+  console.log("A user connected with socket id:",socket.id);
+  const userId=socket.handshake.query.userId;//getting userId from query params
+  if(userId!=undefined){
+    useSocketMap[userId]=socket.id;//storing userId and socketId in map
+  }
+
+  io.emit("online-users", Object.keys(useSocketMap));//emitting online users to all connected clients
+
+  socket.on("disconnect",()=>{
+    delete useSocketMap[userId];//removing userId and 
+    // socketId from map on disconnect
+  io.emit("online-users", Object.keys(useSocketMap));//emitting updated online users to all connected clients
+  })
+})
 
 export {app,server,io};//exporting app and server and io instance

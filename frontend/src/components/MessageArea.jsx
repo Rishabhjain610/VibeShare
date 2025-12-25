@@ -39,7 +39,7 @@ const MessageArea = () => {
         { withCredentials: true }
       );
       dispatch(setMessages(result.data.newMessage));
-      console.log("Fetched messages:", result.data.newMessage);
+      
     } catch (error) {
       console.error("Error fetching messages:", error);
     }
@@ -67,7 +67,7 @@ const MessageArea = () => {
       );
       // Update messages in the Redux store
 
-      console.log("Message sent:", result.data);
+     
       dispatch(setMessages([...(messages || []), result.data.newMessage]));
 
       setMessage("");

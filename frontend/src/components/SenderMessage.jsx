@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 
 const SenderMessage = ({ message }) => {
   const { userData } = useSelector((state) => state.user);
-
+  console.log("SenderMessage userData:", userData);
   if (!message) {
     return null;
   }

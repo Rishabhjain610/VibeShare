@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -6,7 +6,7 @@ import SignUp from "./pages/SignUp.jsx";
 import Login from "./pages/Login.jsx";
 import Home from "./pages/Home.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import UseGetCurrentUser from "./hooks/UseGetCurrentUser.jsx";
 import UseGetOtherUser from "./hooks/UseGetOtherUser.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
@@ -19,6 +19,9 @@ import Messages from "./pages/Messages.jsx";
 import Story from "./components/Story.jsx";
 import MessageArea from "./components/MessageArea.jsx";
 import Reels from "./pages/Reels.jsx";
+import { io } from "socket.io-client";
+import { AuthDataContext } from "./context/AuthContext.jsx";
+import { setSocket,setOnlineUsers } from "./redux/socketSlice.js";
 const App = () => {
   UseGetCurrentUser();
   UseGetOtherUser();
@@ -26,6 +29,30 @@ const App = () => {
   UseGetAllReels();
   UseGetAllStories();
   const userData = useSelector((state) => state.user.userData);
+  const { socket, onlineUsers } = useSelector((state) => state.socket);
+  const { serverUrl } = useContext(AuthDataContext);
+  const dispatch = useDispatch();
+  useEffect(() => {
+    if (userData) {
+      const socketIO = io(serverUrl, {
+        query: { userId: userData._id },
+      });
+      console.log("Socket connected:", socketIO);
+      // dispatch(setSocket(socketIO));
+      socketIO.on("online-users",(data)=>{
+        dispatch(setOnlineUsers(data));
+
+      })
+      return () => {
+        socketIO.close();
+      };
+    } else {
+      if (socket) {
+        socket.close();
+        dispatch(setSocket(null));
+      }
+    }
+  }, [userData]);
 
   return (
     <>
@@ -83,7 +110,10 @@ const App = () => {
           path="/messagearea"
           element={userData ? <MessageArea /> : <Navigate to="/login" />}
         />
-        <Route path="/reels" element={userData ? <Reels /> : <Navigate to="/login" />} />
+        <Route
+          path="/reels"
+          element={userData ? <Reels /> : <Navigate to="/login" />}
+        />
       </Routes>
     </>
   );
