@@ -7,10 +7,12 @@ import { AuthDataContext } from "../context/AuthContext";
 import { setMessages } from "../redux/messageSlice.js";
 import SenderMessage from "./SenderMessage.jsx";
 import ReceiverMessage from "./ReceiverMessage.jsx";
+
 const MessageArea = () => {
   const navigate = useNavigate();
   const { selectedUser, messages } = useSelector((state) => state.message);
   const userData = useSelector((state) => state.user.userData);
+  const {socket} = useSelector((state) => state.socket);
   const [message, setMessage] = useState("");
   const [frontendImage, setFrontendImage] = useState(null);
   const [backendImage, setBackendImage] = useState(null);
@@ -49,6 +51,20 @@ const MessageArea = () => {
       getAllMessages();
     }
   }, [selectedUser]);
+  useEffect(()=>{
+    if(socket){
+      socket.on("newMessage",(mess)=>{
+        dispatch(setMessages([...(messages||[]),mess]));
+      })
+    }
+    return () => {
+      if (socket) {
+        socket.off("newMessage");
+      }
+    };
+  },[messages,socket,setMessages])
+
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     const formData = new FormData();

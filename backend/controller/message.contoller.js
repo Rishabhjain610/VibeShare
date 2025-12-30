@@ -2,7 +2,7 @@ import Conversation from "../models/conversation.model.js";
 import Message from "../models/message.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import User from "../models/user.model.js";
-
+import { getSocketId, io } from "../socket.js";
 const sendMessage = async (req, res) => {
   try {
     const sender = req.userId;
@@ -43,7 +43,11 @@ const sendMessage = async (req, res) => {
     conversation.messages.push(newMessage._id);
     conversation.lastMessage = newMessage._id;
     await conversation.save();
-
+    const receiverSocketId = getSocketId(receiver);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("newMessage", newMessage); // Notify
+      // }receiver in real-time
+    }
     res.status(201).json({ message: "Message sent successfully", newMessage });
   } catch (error) {
     console.error("sendMessage error:", error);
@@ -284,7 +288,7 @@ const promoteToAdmin = async (req, res) => {
     if (!isMember(conversation, userToPromote._id.toString())) {
       return res.status(400).json({ message: "User is not a group member." });
     }
-    if (isAdmin(conversation, userToPromote._id.toString()  )) {
+    if (isAdmin(conversation, userToPromote._id.toString())) {
       return res.status(400).json({ message: "User is already an admin." });
     }
     conversation.groupAdmins.push(userToPromote._id);

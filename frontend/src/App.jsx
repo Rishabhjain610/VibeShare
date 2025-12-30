@@ -21,7 +21,7 @@ import MessageArea from "./components/MessageArea.jsx";
 import Reels from "./pages/Reels.jsx";
 import { io } from "socket.io-client";
 import { AuthDataContext } from "./context/AuthContext.jsx";
-import { setSocket,setOnlineUsers } from "./redux/socketSlice.js";
+import {setOnlineUsers } from "./redux/socketSlice.js";
 const App = () => {
   UseGetCurrentUser();
   UseGetOtherUser();
@@ -29,7 +29,7 @@ const App = () => {
   UseGetAllReels();
   UseGetAllStories();
   const userData = useSelector((state) => state.user.userData);
-  const { socket, onlineUsers } = useSelector((state) => state.socket);
+  const {  onlineUsers } = useSelector((state) => state.socket);
   const { serverUrl } = useContext(AuthDataContext);
   const dispatch = useDispatch();
   useEffect(() => {
@@ -38,7 +38,7 @@ const App = () => {
         query: { userId: userData._id },
       });
       console.log("Socket connected:", socketIO);
-      // dispatch(setSocket(socketIO));
+      dispatch(setSocket(socketIO));
       socketIO.on("online-users",(data)=>{
         dispatch(setOnlineUsers(data));
 
