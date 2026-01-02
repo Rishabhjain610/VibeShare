@@ -1,6 +1,7 @@
 import Post from "../models/post.model.js";
 import User from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { io } from "../socket.js";
 const uploadPost = async (req, res) => {
   try {
     const { mediaType, caption } = req.body;
@@ -57,7 +58,7 @@ const getAllPosts = async (req, res) => {
       .populate("author", "name userName profileImage")
       .populate("comments.author", "name userName profileImage")
       .sort({ createdAt: -1 });
-      posts.forEach((post) => {
+    posts.forEach((post) => {
       if (!post.likes) {
         post.likes = [];
       }
@@ -82,6 +83,11 @@ const likes = async (req, res) => {
       post.likes.push(req.userId);
     }
     await post.save();
+    io.emit("postLiked", {
+      postId: post._id,
+      likesCount: post.likes.length,
+      likes: post.likes.map((id) => id.toString()),
+    });
     return res
       .status(200)
       .json({ message: "Post like status updated", post: post });
@@ -104,6 +110,11 @@ const commentOnPost = async (req, res) => {
     await post.save();
     await post.populate("author", "name userName profileImage");
     await post.populate("comments.author");
+    io.emit("postCommented", {
+      postId: post._id,
+      post:post._id.toString(),
+      comments: post.comments.length,
+    });
     return res
       .status(200)
       .json({ message: "Comment added successfully", post: post });
@@ -136,7 +147,10 @@ const savedPosts = async (req, res) => {
     });
     return res
       .status(200)
-      .json({ message: "Saved posts updated successfully", user: populatedUser });
+      .json({
+        message: "Saved posts updated successfully",
+        user: populatedUser,
+      });
   } catch (error) {
     console.error("Error updating saved posts:", error);
     return res.status(500).json({ message: "Internal server error" });

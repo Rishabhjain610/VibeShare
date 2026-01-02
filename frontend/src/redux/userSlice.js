@@ -4,6 +4,7 @@ const initialState = {
   userData: null,
   otherUsers: null,
   profileData: null,
+  searchData: [], // NEW STATE PROPERTY
 };
 
 const userSlice = createSlice({
@@ -22,6 +23,9 @@ const userSlice = createSlice({
     clearProfileData: (state) => {
       state.profileData = null;
     },
+    setSearchData: (state, action) => { // NEW ACTION
+      state.searchData = action.payload;
+    }
     // ADD THIS NEW ACTION
     
   },
@@ -32,6 +36,7 @@ export const {
   setOtherUsers,
   setProfileData,
   clearProfileData,
+  setSearchData,
    // EXPORT THE NEW ACTION
 } = userSlice.actions;
 

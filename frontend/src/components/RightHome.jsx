@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useContext, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import {
@@ -23,6 +24,7 @@ import { setSelectedUser, setMessages } from "../redux/messageSlice";
 import SenderMessage from "./SenderMessage";
 import ReceiverMessage from "./ReceiverMessage";
 import EmojiPicker from "emoji-picker-react";
+import { SocketDataContext } from "../context/SocketContext";
 
 const Conversation = ({ conversation, isOnline, onSelect, isSelected }) => {
   const participant = conversation.isGroupChat
@@ -89,10 +91,17 @@ const RightHome = () => {
 
   const onlineUsers = useSelector((state) => state.socket.onlineUsers) || [];
   const userData = useSelector((state) => state.user.userData);
-  const messages = useSelector((state) => state.message.messages);
-  const otherUser = useSelector((state) => state.user.otherUsers);
+  const messages = useSelector((state) => state.message.messages) || [];
+  const otherUser = useSelector((state) => state.user.otherUsers) || [];
   const { serverUrl } = useContext(AuthDataContext);
   const dispatch = useDispatch();
+  const currentGroupRef = useRef(null);
+  const { socket } = useContext(SocketDataContext);
+  const messagesRef = useRef(messages || []);
+
+  useEffect(() => {
+    messagesRef.current = messages || [];
+  }, [messages]);
 
   // Check if current chat user is online
   const isCurrentUserOnline =
@@ -104,6 +113,30 @@ const RightHome = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // join/leave group room when selection changes
+  useEffect(() => {
+    if (!socket) return;
+    if (selectedConversation?.isGroupChat) {
+      if (
+        currentGroupRef.current &&
+        currentGroupRef.current !== selectedConversation._id
+      ) {
+        socket.emit("leaveGroup", currentGroupRef.current);
+      }
+      socket.emit("joinGroup", selectedConversation._id);
+      currentGroupRef.current = selectedConversation._id;
+    } else if (currentGroupRef.current) {
+      socket.emit("leaveGroup", currentGroupRef.current);
+      currentGroupRef.current = null;
+    }
+    return () => {
+      if (socket && currentGroupRef.current) {
+        socket.emit("leaveGroup", currentGroupRef.current);
+        currentGroupRef.current = null;
+      }
+    };
+  }, [socket, selectedConversation]);
 
   useEffect(() => {
     const getConversations = async () => {
@@ -124,6 +157,48 @@ const RightHome = () => {
     };
     getConversations();
   }, [serverUrl]);
+
+  // socket listener: append only relevant messages
+  useEffect(() => {
+    if (!socket) return;
+    const handler = (msg) => {
+      if (msg.isGroupChat) {
+        if (
+          selectedConversation?.isGroupChat &&
+          String(selectedConversation._id) === String(msg.groupId)
+        ) {
+          const newList = [...(messagesRef.current || []), msg];
+          messagesRef.current = newList;
+          dispatch(setMessages(newList));
+          setTimeout(
+            () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }),
+            30
+          );
+        }
+      } else {
+        // direct message: check sender/receiver or conversation id
+        const otherId = selectedConversation?.participants?.[0]?._id;
+        if (!selectedConversation?.isGroupChat && otherId) {
+          const senderId = msg.sender?._id || msg.sender;
+          const receiverId = msg.receiver?._id || msg.receiver;
+          if (
+            String(senderId) === String(otherId) ||
+            String(receiverId) === String(otherId)
+          ) {
+            const newList = [...(messagesRef.current || []), msg];
+            messagesRef.current = newList;
+            dispatch(setMessages(newList));
+            setTimeout(
+              () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }),
+              30
+            );
+          }
+        }
+      }
+    };
+    socket.on("newMessage", handler);
+    return () => socket.off("newMessage", handler);
+  }, [socket, selectedConversation, dispatch]);
 
   useEffect(() => {
     if (!searchTerm) {
@@ -166,7 +241,9 @@ const RightHome = () => {
             `${serverUrl}/api/message/groups/${selectedConversation._id}/messages`,
             { withCredentials: true }
           );
-          dispatch(setMessages(res.data.messages || []));
+          const list = res.data.messages || [];
+          dispatch(setMessages(list));
+          messagesRef.current = list;
         } else {
           const otherUser = selectedConversation.participants[0];
           dispatch(setSelectedUser(otherUser));
@@ -174,7 +251,9 @@ const RightHome = () => {
             `${serverUrl}/api/message/messages/${otherUser._id}`,
             { withCredentials: true }
           );
-          dispatch(setMessages(res.data.newMessage || []));
+          const list = res.data.newMessage || [];
+          dispatch(setMessages(list));
+          messagesRef.current = list;
         }
       } catch (error) {
         console.error("Error fetching messages:", error);
@@ -257,7 +336,7 @@ const RightHome = () => {
       let res;
       if (selectedConversation.isGroupChat) {
         res = await axios.post(
-          `${serverUrl}/api/message/groups/${selectedConversation._id}/messages`,
+          `${serverUrl}/api/message/groups/${selectedConversation._id || selectedConversation._id}/messages`,
           formData,
           {
             withCredentials: true,
@@ -274,7 +353,11 @@ const RightHome = () => {
           }
         );
       }
-      dispatch(setMessages([...messages, res.data.newMessage]));
+      // use messagesRef to avoid stale state
+      const newMsg = res.data.newMessage;
+      const newList = [...(messagesRef.current || []), newMsg];
+      messagesRef.current = newList;
+      dispatch(setMessages(newList));
       setMessage("");
       setSelectedImage(null);
       setImagePreview(null);
@@ -282,6 +365,7 @@ const RightHome = () => {
       if (imageInputRef.current) {
         imageInputRef.current.value = "";
       }
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
     } catch (error) {
       console.error("Error sending message:", error);
       alert("Failed to send message");

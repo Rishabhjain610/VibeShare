@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useContext, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -23,6 +24,7 @@ import { setSelectedUser, setMessages } from "../redux/messageSlice";
 import SenderMessage from "../components/SenderMessage";
 import ReceiverMessage from "../components/ReceiverMessage";
 import EmojiPicker from "emoji-picker-react";
+import { SocketDataContext } from "../context/SocketContext";
 
 const Conversation = ({ conversation, isOnline, onSelect, isSelected }) => {
   const participant = conversation.isGroupChat
@@ -86,18 +88,24 @@ const Messages = () => {
 
   const imageInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const currentGroupRef = useRef(null);
+  const messagesRef = useRef([]);
 
   const onlineUsers = useSelector((state) => state.socket.onlineUsers) || [];
   const userData = useSelector((state) => state.user.userData);
-  const messages = useSelector((state) => state.message.messages);
+  const messages = useSelector((state) => state.message.messages) || [];
   const otherUsers = useSelector((state) => state.user.otherUsers);
   const { serverUrl } = useContext(AuthDataContext);
   const dispatch = useDispatch();
-
+  const { socket } = useContext(SocketDataContext);
   const isCurrentUserOnline =
-    selectedConversation && !selectedConversation.isGroupChat
-      ? onlineUsers.includes(selectedConversation.participants[0]?._id)
-      : false;
+  selectedConversation && !selectedConversation.isGroupChat
+    ? onlineUsers.includes(selectedConversation.participants[0]?._id)
+    : false;
+  // keep messagesRef in sync
+  useEffect(() => {
+    messagesRef.current = messages || [];
+  }, [messages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -139,10 +147,50 @@ const Messages = () => {
     setFilteredConversations(filtered);
   }, [searchTerm, conversations]);
 
+  // Robust socket handler: append only relevant messages and scroll
+  useEffect(() => {
+    if (!socket) return;
+    const handler = (mess) => {
+      // group payloads from backend should include isGroupChat and groupId
+      if (mess.isGroupChat) {
+        if (
+          selectedConversation?.isGroupChat &&
+          String(selectedConversation._id) === String(mess.groupId)
+        ) {
+          const newList = [...(messagesRef.current || []), mess];
+          messagesRef.current = newList;
+          dispatch(setMessages(newList));
+          setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 30);
+        }
+      } else {
+        // direct message -> append if this DM is open
+        if (!selectedConversation?.isGroupChat) {
+          const otherId = selectedConversation?.participants?.[0]?._id;
+          if (!otherId) return;
+          const senderId = mess.sender?._id || mess.sender;
+          const receiverId = mess.receiver?._id || mess.receiver;
+          if (
+            String(senderId) === String(otherId) ||
+            String(receiverId) === String(otherId)
+          ) {
+            const newList = [...(messagesRef.current || []), mess];
+            messagesRef.current = newList;
+            dispatch(setMessages(newList));
+            setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 30);
+          }
+        }
+      }
+    };
+    socket.on("newMessage", handler);
+    return () => {
+      socket.off("newMessage", handler);
+    };
+  }, [socket, selectedConversation, dispatch]);
+
+  // fetch messages when conversation selected and join/leave group rooms
   useEffect(() => {
     const fetchMessages = async () => {
       if (!selectedConversation) return;
-
       try {
         let res;
         if (selectedConversation.isGroupChat) {
@@ -150,7 +198,17 @@ const Messages = () => {
             `${serverUrl}/api/message/groups/${selectedConversation._id}/messages`,
             { withCredentials: true }
           );
-          dispatch(setMessages(res.data.messages || []));
+          const list = res.data.messages || [];
+          dispatch(setMessages(list));
+          messagesRef.current = list;
+          // join group room
+          if (socket) {
+            if (currentGroupRef.current && currentGroupRef.current !== selectedConversation._id) {
+              socket.emit("leaveGroup", currentGroupRef.current);
+            }
+            socket.emit("joinGroup", selectedConversation._id);
+            currentGroupRef.current = selectedConversation._id;
+          }
         } else {
           const otherUser = selectedConversation.participants[0];
           dispatch(setSelectedUser(otherUser));
@@ -158,14 +216,32 @@ const Messages = () => {
             `${serverUrl}/api/message/messages/${otherUser._id}`,
             { withCredentials: true }
           );
-          dispatch(setMessages(res.data.newMessage || []));
+          const list = res.data.newMessage || [];
+          dispatch(setMessages(list));
+          messagesRef.current = list;
+          // leave any group room when opening DM
+          if (socket && currentGroupRef.current) {
+            socket.emit("leaveGroup", currentGroupRef.current);
+            currentGroupRef.current = null;
+          }
         }
+        setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
       } catch (error) {
         console.error("Error fetching messages:", error);
       }
     };
     fetchMessages();
-  }, [selectedConversation, serverUrl, dispatch]);
+  }, [selectedConversation, serverUrl, dispatch, socket]);
+
+  // cleanup leave room on unmount
+  useEffect(() => {
+    return () => {
+      if (socket && currentGroupRef.current) {
+        socket.emit("leaveGroup", currentGroupRef.current);
+        currentGroupRef.current = null;
+      }
+    };
+  }, [socket]);
 
   const handleBack = () => {
     if (selectedConversation) {
@@ -229,10 +305,10 @@ const Messages = () => {
     setMessage((prevMessage) => prevMessage + emojiObject.emoji);
   };
 
-  const handleSendMessage = async (e) => {
+    const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!message.trim() && !selectedImage) return;
-
+  
     try {
       const formData = new FormData();
       if (message.trim()) {
@@ -241,10 +317,9 @@ const Messages = () => {
       if (selectedImage) {
         formData.append("images", selectedImage);
       }
-
-      let res;
+  
       if (selectedConversation.isGroupChat) {
-        res = await axios.post(
+        await axios.post(
           `${serverUrl}/api/message/groups/${selectedConversation._id}/messages`,
           formData,
           {
@@ -253,7 +328,7 @@ const Messages = () => {
           }
         );
       } else {
-        res = await axios.post(
+        await axios.post(
           `${serverUrl}/api/message/send/${selectedConversation.participants[0]._id}`,
           formData,
           {
@@ -262,7 +337,9 @@ const Messages = () => {
           }
         );
       }
-      dispatch(setMessages([...messages, res.data.newMessage]));
+  
+      // Do NOT append the message here!
+      // Just reset the input fields and let the socket event handle UI update.
       setMessage("");
       setSelectedImage(null);
       setImagePreview(null);
@@ -270,6 +347,8 @@ const Messages = () => {
       if (imageInputRef.current) {
         imageInputRef.current.value = "";
       }
+      // Optionally scroll to bottom (socket event will also do this)
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
     } catch (error) {
       console.error("Error sending message:", error);
       alert("Failed to send message");

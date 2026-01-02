@@ -118,4 +118,28 @@ const follow = async (req, res) => {
   }
 };
 
-export { getCurrentUser, otherUser, editProfile, getprofile, follow };
+
+const searchUsers=async(req,res)=>{
+  try {
+   const {query}=req.query;
+   if(!query){
+    return res.status(400).json({message:"Query parameter is required"});
+   }
+   const users=await User.find({
+    $or:[
+      {name:{$regex:query,$options:"i"}},//case insensitive search
+      {userName:{$regex:query,$options:"i"}}
+    ]
+   }).select("-password");
+   return res.status(200).json({users});
+  } catch (error) {
+    console.error("Error searching users:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+
+}
+
+
+
+
+export { getCurrentUser, otherUser, editProfile, getprofile, follow,searchUsers };

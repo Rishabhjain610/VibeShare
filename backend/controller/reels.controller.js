@@ -1,5 +1,6 @@
 import Reel from "../models/reels.model.js";
 import User from "../models/user.model.js";
+import { io } from "../socket.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
 const uploadReel = async (req, res) => {
@@ -56,6 +57,7 @@ const likes = async (req, res) => {
       reel.likes.push(req.userId);
     }
     await reel.save();
+    io.emit("reelLiked", { reelId: reel._id, likes: reel.likes.length });
     return res.status(200).json(reel);
   } catch (error) {
     console.error("Error updating likes:", error);
@@ -82,6 +84,10 @@ const commentOnReel = async (req, res) => {
     const populatedReel = await Reel.findById(reelId)
       .populate("author", "name userName profileImage")
       .populate("comments.author", "name userName profileImage");
+    io.emit("reelCommented", {
+      reelId: reel._id,
+      comments: reel.comments.length,
+    });
     return res.status(200).json(populatedReel);
   } catch (error) {
     console.error("Error commenting on reel:", error);

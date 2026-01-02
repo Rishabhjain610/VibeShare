@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import { useSelector } from "react-redux";
 
 const SenderMessage = ({ message }) => {
@@ -7,14 +7,19 @@ const SenderMessage = ({ message }) => {
   if (!message) {
     return null;
   }
-
+  const scrollref = useRef(null);
+  useEffect(() => {
+    if (scrollref.current) {
+      scrollref.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [message]);
   const sentTime = new Date(message.createdAt).toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
   });
 
   return (
-    <div className="flex justify-end mb-4 items-end">
+    <div className="flex justify-end mb-4 items-end" ref={scrollref}>
       <div className="flex flex-col items-end max-w-xs lg:max-w-md">
         <div className="bg-purple-600 text-white rounded-l-lg rounded-tr-lg p-3">
           {message.images && message.images.length > 0 && (

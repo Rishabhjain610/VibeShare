@@ -175,7 +175,13 @@ const sendmessageingrp = async (req, res) => {
     conversation.messages.push(newMessage._id);
     conversation.lastMessage = newMessage._id;
     await conversation.save();
-
+    io.to(conversation.participants).emit("newMessage", newMessage);
+    const payload = {
+      ...(newMessage.toObject ? newMessage.toObject() : newMessage),
+      groupId: conversation._id.toString(),
+      isGroupChat: true,
+    }; // Notify all group members
+    io.to(conversation._id.toString()).emit("newMessage", payload);
     res.status(201).json({ message: "Message sent", newMessage });
   } catch (error) {
     console.error("sendImageingrp error:", error);

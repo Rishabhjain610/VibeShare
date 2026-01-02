@@ -22,6 +22,8 @@ import Reels from "./pages/Reels.jsx";
 import { io } from "socket.io-client";
 import { AuthDataContext } from "./context/AuthContext.jsx";
 import {setOnlineUsers } from "./redux/socketSlice.js";
+import { SocketDataContext } from "./context/SocketContext.jsx";
+import SearchPage from "./pages/SearchPage.jsx";
 const App = () => {
   UseGetCurrentUser();
   UseGetOtherUser();
@@ -31,6 +33,7 @@ const App = () => {
   const userData = useSelector((state) => state.user.userData);
   const {  onlineUsers } = useSelector((state) => state.socket);
   const { serverUrl } = useContext(AuthDataContext);
+  const { socket, setSocket } = useContext(SocketDataContext);
   const dispatch = useDispatch();
   useEffect(() => {
     if (userData) {
@@ -38,7 +41,7 @@ const App = () => {
         query: { userId: userData._id },
       });
       console.log("Socket connected:", socketIO);
-      dispatch(setSocket(socketIO));
+      setSocket(socketIO);
       socketIO.on("online-users",(data)=>{
         dispatch(setOnlineUsers(data));
 
@@ -49,7 +52,7 @@ const App = () => {
     } else {
       if (socket) {
         socket.close();
-        dispatch(setSocket(null));
+        setSocket(null);
       }
     }
   }, [userData]);
@@ -113,6 +116,10 @@ const App = () => {
         <Route
           path="/reels"
           element={userData ? <Reels /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/search"
+          element={userData ? <SearchPage /> : <Navigate to="/login" />}
         />
       </Routes>
     </>

@@ -25,6 +25,17 @@ io.on("connection",(socket)=>{
     useSocketMap[userId]=socket.id;//storing userId and socketId in map
   }
 
+  socket.on("joinGroup",(groupId)=>{
+    if(groupId){
+      socket.join(groupId);//joining group room
+    }
+  })
+  socket.on("leaveGroup",(groupId)=>{
+    if(groupId){
+      socket.leave(groupId);//leaving group room
+    }
+  })
+
   io.emit("online-users", Object.keys(useSocketMap));//emitting online users to all connected clients
 
   socket.on("disconnect",()=>{
