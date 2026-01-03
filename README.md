@@ -68,7 +68,7 @@ Don't scroll through hundreds of messages. VibeShare's built-in AI (powered by *
 ---
 
 ## 📸 Demo
-
+https://github.com/user-attachments/assets/efddf838-7e05-4b56-a927-2e93711a49b0
 
 
 ---
