@@ -9,8 +9,8 @@
 
 * **Social Networking:** A complete ecosystem for posts, reels, and stories.
 * **Real-time Messaging:** Powered by Socket.IO for instant communication.
+* **Smart Notifications:** Instant alerts for likes, comments, and interactions.
 * **AI Chat Summarization:** Leverages **GPT-OSS 120B** to summarize long conversations instantly.
-* **Group Communication:** robust group chat features with admin controls.
 * **Secure & Responsive:** Fully authenticated and optimized for all devices (Mobile, Tablet, Desktop).
 
 ---
@@ -19,9 +19,12 @@
 
 ### 🧑‍🤝‍🧑 Social Media Suite
 * **Content Creation:** Create text posts, upload reels, and share temporary stories.
-* **Engagement:** Like, comment, and save posts to build community.
+* **Story Analytics:** View exactly **who has seen your story** in real-time.
+* **Engagement & Notifications:**
+    * Like, comment, and save posts to build community.
+    * **Real-time Notifications:** Get instantly notified whenever someone likes your reel or comments on your posts.
+* **Profile Management:** Fully customizable user profiles. **Edit your details**, update profile pictures, and manage your media gallery.
 * **Connections:** Follow/Unfollow system to curate your feed.
-* **Profile Management:** Customizable user profiles with media galleries.
 * **Rich Media:** Support for images, videos, and emojis.
 
 ### 💬 Real-Time Chat & Groups
@@ -62,5 +65,11 @@ Don't scroll through hundreds of messages. VibeShare's built-in AI (powered by *
 * ![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white) **MongoDB** - NoSQL Database.
 * 🤖 **AI Model:** GPT-OSS 120B (Integration for summarization).
 
-## Demo
 ---
+
+## 📸 Demo
+
+
+
+---
+
