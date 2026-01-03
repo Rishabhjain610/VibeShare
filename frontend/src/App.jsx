@@ -23,14 +23,19 @@ import { io } from "socket.io-client";
 import { AuthDataContext } from "./context/AuthContext.jsx";
 import {setOnlineUsers } from "./redux/socketSlice.js";
 import { SocketDataContext } from "./context/SocketContext.jsx";
+import UseGetAllNotification from "./hooks/UseGetAllNotification.jsx";
+import Notification from "./pages/Notification.jsx";
 import SearchPage from "./pages/SearchPage.jsx";
+import { setNotificationData } from "./redux/userSlice.js";
 const App = () => {
   UseGetCurrentUser();
   UseGetOtherUser();
   UseGetAllPost();
   UseGetAllReels();
   UseGetAllStories();
+  UseGetAllNotification();
   const userData = useSelector((state) => state.user.userData);
+  const notifications = useSelector((state) => state.user.notificationData);
   const {  onlineUsers } = useSelector((state) => state.socket);
   const { serverUrl } = useContext(AuthDataContext);
   const { socket, setSocket } = useContext(SocketDataContext);
@@ -46,6 +51,9 @@ const App = () => {
         dispatch(setOnlineUsers(data));
 
       })
+      socketIO?.on("newNotification",(data)=>{
+      dispatch(setNotificationData([...notifications,data]));
+    })
       return () => {
         socketIO.close();
       };
@@ -56,7 +64,9 @@ const App = () => {
       }
     }
   }, [userData]);
-
+  
+    
+  
   return (
     <>
       <ToastContainer
@@ -120,6 +130,10 @@ const App = () => {
         <Route
           path="/search"
           element={userData ? <SearchPage /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/notifications"
+          element={userData ? <Notification /> : <Navigate to="/login" />}
         />
       </Routes>
     </>

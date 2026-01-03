@@ -1,6 +1,8 @@
 import User from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import Post from "../models/post.model.js";
+import Notification from "../models/notifaction.model.js";
+import { getSocketId, io } from "../socket.js";
 const getCurrentUser = async (req, res) => {
   try {
     const user = await User.findById(req.userId)
@@ -102,6 +104,23 @@ const follow = async (req, res) => {
     } else {
       currentUser.following.push(targetUserId);
       targetUser.followers.push(currentUserId);
+      if (currentUserId !== targetUserId) {
+        const notification = await Notification.create({
+          sender: currentUserId,
+          receiver: targetUserId,
+          type: "follow",
+          message: "started following you",
+        });
+        const populatedNotification = await Notification.findById(
+          notification._id
+        )
+          .populate("sender", "name userName profileImage")
+          .populate("receiver", "name userName profileImage");
+        const receiverSocketId = getSocketId(targetUserId.toString());
+        if (receiverSocketId) {
+          io.to(receiverSocketId).emit("newNotification", populatedNotification);
+        }
+      }
     }
     await currentUser.save();
     await targetUser.save();
@@ -139,7 +158,62 @@ const searchUsers=async(req,res)=>{
 
 }
 
+const getAllNotifications=async(req,res)=>{
+  try {
+    const notifications=await Notification.find({receiver:req.userId})
+    .populate("sender","name userName profileImage")
+    .populate("receiver","name userName profileImage")
+    .populate("post","media caption author")
+    .populate("reel","media caption author")
+    .sort({createdAt:-1});
+    return res.status(200).json({notifications});
+  } catch (error) {
+    console.error("Error fetching notifications:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+const readNotification=async(req,res)=>{
+  try {
+    const payload = req.body; // can be id string or array of ids
 
+    if (Array.isArray(payload)) {
+      // mark many
+      await Notification.updateMany(
+          { _id: { $in: payload }, receiver: req.userId },
+        { $set: { isRead: true } }
+      );
+      const updated = await Notification.find({ _id: { $in: payload }, receiver: req.userId })
+        .populate("sender", "name userName profileImage")
+        .populate("receiver", "name userName profileImage")
+        .populate("post", "media caption author")
+        .populate("reel", "media caption author");
+      return res.status(200).json({ message: "Notifications marked as read", notifications: updated });
+    } else {
+      // single id
+      const notification = await Notification.findOneAndUpdate(
+        { _id: payload, receiver: req.userId },
+        { $set: { isRead: true } },
+        { new: true }
+      )
+        .populate("sender", "name userName profileImage")
+        .populate("receiver", "name userName profileImage")
+        .populate("post", "media caption author")
+        .populate("reel", "media caption author");
+      if (!notification) {
+        return res.status(404).json({ message: "Notification not found" });
+      }
+      return res.status(200).json({ message: "Notification marked as read", notification });
+    }
+  }  catch (error) {
+    console.error("Error reading notification:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
 
-
-export { getCurrentUser, otherUser, editProfile, getprofile, follow,searchUsers };
+export {
+  getCurrentUser,
+  editProfile,readNotification,
+  getprofile,
+  follow,getAllNotifications
+,otherUser,searchUsers
+};

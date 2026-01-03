@@ -1,10 +1,12 @@
 import { createSlice } from "@reduxjs/toolkit";
 
+
 const initialState = {
   userData: null,
   otherUsers: null,
   profileData: null,
-  searchData: [], // NEW STATE PROPERTY
+  searchData: [],
+  notificationData:null // NEW STATE PROPERTY
 };
 
 const userSlice = createSlice({
@@ -25,7 +27,10 @@ const userSlice = createSlice({
     },
     setSearchData: (state, action) => { // NEW ACTION
       state.searchData = action.payload;
-    }
+    },
+    setNotificationData: (state, action) => { // NEW ACTION
+      state.notificationData = action.payload;
+    },
     // ADD THIS NEW ACTION
     
   },
@@ -37,6 +42,7 @@ export const {
   setProfileData,
   clearProfileData,
   setSearchData,
+  setNotificationData,
    // EXPORT THE NEW ACTION
 } = userSlice.actions;
 

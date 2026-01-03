@@ -1,6 +1,7 @@
+import Notification from "../models/notifaction.model.js";
 import Reel from "../models/reels.model.js";
 import User from "../models/user.model.js";
-import { io } from "../socket.js";
+import { getSocketId, io } from "../socket.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
 const uploadReel = async (req, res) => {
@@ -55,6 +56,27 @@ const likes = async (req, res) => {
       reel.likes.pull(req.userId);
     } else {
       reel.likes.push(req.userId);
+      if (reel.author._id != req.userId) {
+        const notification = await Notification.create({
+          sender: req.userId,
+          receiver: reel.author._id,
+          type: "like",
+          message: "liked your reel",
+          reel: reel._id,
+        });
+        const populatedNotification = await Notification.findById(
+          notification._id
+        )
+          .populate("sender", "name userName profileImage")
+          .populate("receiver", "name userName profileImage").populate("reel","media caption author");
+        const receiverSocketId = getSocketId(reel.author._id.toString());
+        if (receiverSocketId) {
+          io.to(receiverSocketId).emit(
+            "newNotification",
+            populatedNotification
+          );
+        }
+      }
     }
     await reel.save();
     io.emit("reelLiked", { reelId: reel._id, likes: reel.likes.length });
@@ -79,7 +101,24 @@ const commentOnReel = async (req, res) => {
       author: user._id,
       comment: comment,
     });
-
+    if (reel.author._id != req.userId) {
+      const notification = await Notification.create({
+        sender: req.userId,
+        receiver: reel.author._id,
+        type: "comment",
+        message: "commented on your reel",
+        reel: reel._id,
+      });
+      const populatedNotification = await Notification.findById(
+        notification._id
+      )
+        .populate("sender", "name userName profileImage")
+        .populate("receiver", "name userName profileImage").populate("reel","media caption author");
+      const receiverSocketId = getSocketId(reel.author._id.toString());
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("newNotification", populatedNotification);
+      }
+    }
     await reel.save();
     const populatedReel = await Reel.findById(reelId)
       .populate("author", "name userName profileImage")

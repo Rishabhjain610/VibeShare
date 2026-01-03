@@ -1,7 +1,8 @@
 import Post from "../models/post.model.js";
 import User from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
-import { io } from "../socket.js";
+import { getSocketId, io } from "../socket.js";
+import Notification from "../models/notifaction.model.js";
 const uploadPost = async (req, res) => {
   try {
     const { mediaType, caption } = req.body;
@@ -81,6 +82,27 @@ const likes = async (req, res) => {
       post.likes.pull(req.userId);
     } else {
       post.likes.push(req.userId);
+      if (post.author._id != req.userId) {
+        const notification = await Notification.create({
+          sender: req.userId,
+          receiver: post.author._id,
+          type: "like",
+          message: "liked your post",
+          post: post._id,
+        });
+        const populatedNotification = await Notification.findById(
+          notification._id
+        )
+          .populate("sender", "name userName profileImage")
+          .populate("receiver", "name userName profileImage").populate("post","media caption author");
+        const receiverSocketId = getSocketId(post.author._id.toString());
+        if (receiverSocketId) {
+          io.to(receiverSocketId).emit(
+            "newNotification",
+            populatedNotification
+          );
+        }
+      }
     }
     await post.save();
     io.emit("postLiked", {
@@ -107,12 +129,30 @@ const commentOnPost = async (req, res) => {
       return res.status(404).json({ message: "Post not found" });
     }
     post.comments.push({ author: req.userId, comment });
+    if (post.author._id != req.userId) {
+      const notification = await Notification.create({
+        sender: req.userId,
+        receiver: post.author._id,
+        type: "comment",
+        message: "commented on your post",
+        post: post._id,
+      });
+      const populatedNotification = await Notification.findById(
+        notification._id
+      )
+        .populate("sender", "name userName profileImage")
+        .populate("receiver", "name userName profileImage").populate("post","media caption author");
+      const receiverSocketId = getSocketId(post.author._id.toString());
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("newNotification", populatedNotification);
+      }
+    }
     await post.save();
     await post.populate("author", "name userName profileImage");
     await post.populate("comments.author");
     io.emit("postCommented", {
       postId: post._id,
-      post:post._id.toString(),
+      post: post._id.toString(),
       comments: post.comments.length,
     });
     return res
@@ -145,12 +185,10 @@ const savedPosts = async (req, res) => {
         select: "name userName profileImage",
       },
     });
-    return res
-      .status(200)
-      .json({
-        message: "Saved posts updated successfully",
-        user: populatedUser,
-      });
+    return res.status(200).json({
+      message: "Saved posts updated successfully",
+      user: populatedUser,
+    });
   } catch (error) {
     console.error("Error updating saved posts:", error);
     return res.status(500).json({ message: "Internal server error" });

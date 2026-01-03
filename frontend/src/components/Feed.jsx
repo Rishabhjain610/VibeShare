@@ -3,28 +3,40 @@ import { useSelector, useDispatch } from "react-redux";
 import StoryCard from "./StoryCard";
 import Post from "./Post";
 import { PartyPopper, Heart } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link,useNavigate } from "react-router-dom";
 import { MessageSquare } from "lucide-react";
 const Feed = () => {
   const dispatch = useDispatch();
   const posts = useSelector((state) => state.post?.postData.posts) || [];
   const user = useSelector((state) => state.user?.userData) || {};
+  const notifications = useSelector((state) => state.user?.notificationData) || [];
+  const navigate=useNavigate();
+  const hasUnreadNotification = notifications.some(
+    (n) => n && (n.isRead === false || n.read === false)
+  );
   const otherUsers = useSelector((state) => state.story?.storyList) || [];
 
   return (
     <div className="w-full  lg:w-[55%] h-screen overflow-y-auto scrollbar-hide">
       <div className="max-w-2xl mx-auto">
-        {/* Sticky Header */}
+      
         <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm flex items-center justify-between p-3 mb-4 border-b border-gray-200">
           <div className="flex items-center gap-2">
             <PartyPopper className="h-7 w-7 text-purple-600" />
             <h1 className="text-2xl logo text-gray-800">VibeShare</h1>
           </div>
           <div className="flex items-center gap-4">
-            <button className="text-gray-700 hover:text-red-500 transition-colors p-1 rounded-full">
+            {/* <button className="text-gray-700 hover:text-red-500 transition-colors p-1 rounded-full">
               <Heart size={24} />
+            </button> */}
+           
+            <button className="relative text-gray-700 hover:text-red-500 transition-colors p-1 rounded-full">
+              <Heart size={24} onClick={() => {navigate("/notifications")}} />
+              {hasUnreadNotification && (
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full ring-1 ring-white" />
+              )}
             </button>
-            {/* Messages Icon - Hidden on large screens */}
+            
             <Link
               to="/messages"
               className="lg:hidden text-gray-700 hover:text-purple-600 transition-colors p-1 rounded-full"
