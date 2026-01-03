@@ -1,7 +1,7 @@
 import React,{useContext,createContext} from 'react'
 export const AuthDataContext = createContext();
 const AuthContext = ({children}) => {
-  const serverUrl="http://localhost:9000";
+  const serverUrl="https://vibeshare-backend-j92a.onrender.com";
   const value={
     serverUrl
   }
