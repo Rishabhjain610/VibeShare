@@ -28,7 +28,9 @@ const Signup = async (req, res) => {
 
     res.cookie("token", token, {
       httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      secure:true,
+      sameSite:"none" // 7 days
     });
 
     return res
@@ -56,7 +58,9 @@ const Login = async (req, res) => {
     const token = await genToken({ id: user._id });
     res.cookie("token", token, {
       httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      secure:true,
+      sameSite:"none" // 7 days
     });
     return res.status(200).json({ message: "Login successful", user });
   } catch (error) {
