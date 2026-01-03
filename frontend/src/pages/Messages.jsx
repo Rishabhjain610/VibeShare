@@ -16,6 +16,7 @@ import {
   Smile,
   Image as ImageIcon,
   X,
+  FileText,
 } from "lucide-react";
 import axios from "axios";
 import { useSelector, useDispatch } from "react-redux";
@@ -57,9 +58,7 @@ const Conversation = ({ conversation, isOnline, onSelect, isSelected }) => {
         )}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-gray-800 truncate">
-          {participant.name}
-        </p>
+        <p className="font-semibold text-gray-800 truncate">{participant.name}</p>
         <p className="text-sm text-gray-500 truncate">
           {conversation.lastMessage?.message || "No messages yet"}
         </p>
@@ -85,6 +84,9 @@ const Messages = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [summary, setSummary] = useState(null);
+  const [showSummary, setShowSummary] = useState(false);
+  const [summarizing, setSummarizing] = useState(false);
 
   const imageInputRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -98,11 +100,12 @@ const Messages = () => {
   const { serverUrl } = useContext(AuthDataContext);
   const dispatch = useDispatch();
   const { socket } = useContext(SocketDataContext);
+
   const isCurrentUserOnline =
-  selectedConversation && !selectedConversation.isGroupChat
-    ? onlineUsers.includes(selectedConversation.participants[0]?._id)
-    : false;
-  // keep messagesRef in sync
+    selectedConversation && !selectedConversation.isGroupChat
+      ? onlineUsers.includes(selectedConversation.participants[0]?._id)
+      : false;
+
   useEffect(() => {
     messagesRef.current = messages || [];
   }, [messages]);
@@ -147,11 +150,9 @@ const Messages = () => {
     setFilteredConversations(filtered);
   }, [searchTerm, conversations]);
 
-  // Robust socket handler: append only relevant messages and scroll
   useEffect(() => {
     if (!socket) return;
     const handler = (mess) => {
-      // group payloads from backend should include isGroupChat and groupId
       if (mess.isGroupChat) {
         if (
           selectedConversation?.isGroupChat &&
@@ -160,10 +161,13 @@ const Messages = () => {
           const newList = [...(messagesRef.current || []), mess];
           messagesRef.current = newList;
           dispatch(setMessages(newList));
-          setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 30);
+          setTimeout(
+            () =>
+              messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }),
+            30
+          );
         }
       } else {
-        // direct message -> append if this DM is open
         if (!selectedConversation?.isGroupChat) {
           const otherId = selectedConversation?.participants?.[0]?._id;
           if (!otherId) return;
@@ -176,7 +180,11 @@ const Messages = () => {
             const newList = [...(messagesRef.current || []), mess];
             messagesRef.current = newList;
             dispatch(setMessages(newList));
-            setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 30);
+            setTimeout(
+              () =>
+                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }),
+              30
+            );
           }
         }
       }
@@ -187,7 +195,6 @@ const Messages = () => {
     };
   }, [socket, selectedConversation, dispatch]);
 
-  // fetch messages when conversation selected and join/leave group rooms
   useEffect(() => {
     const fetchMessages = async () => {
       if (!selectedConversation) return;
@@ -201,9 +208,11 @@ const Messages = () => {
           const list = res.data.messages || [];
           dispatch(setMessages(list));
           messagesRef.current = list;
-          // join group room
           if (socket) {
-            if (currentGroupRef.current && currentGroupRef.current !== selectedConversation._id) {
+            if (
+              currentGroupRef.current &&
+              currentGroupRef.current !== selectedConversation._id
+            ) {
               socket.emit("leaveGroup", currentGroupRef.current);
             }
             socket.emit("joinGroup", selectedConversation._id);
@@ -219,13 +228,15 @@ const Messages = () => {
           const list = res.data.newMessage || [];
           dispatch(setMessages(list));
           messagesRef.current = list;
-          // leave any group room when opening DM
           if (socket && currentGroupRef.current) {
             socket.emit("leaveGroup", currentGroupRef.current);
             currentGroupRef.current = null;
           }
         }
-        setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+        setTimeout(
+          () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }),
+          50
+        );
       } catch (error) {
         console.error("Error fetching messages:", error);
       }
@@ -233,7 +244,6 @@ const Messages = () => {
     fetchMessages();
   }, [selectedConversation, serverUrl, dispatch, socket]);
 
-  // cleanup leave room on unmount
   useEffect(() => {
     return () => {
       if (socket && currentGroupRef.current) {
@@ -253,6 +263,37 @@ const Messages = () => {
       dispatch(setSelectedUser(null));
     } else {
       navigate(-1);
+    }
+  };
+
+  const handleSummarize = async () => {
+    if (!messages || messages.length === 0) {
+      alert("No messages to summarize");
+      return;
+    }
+    try {
+      setSummarizing(true);
+      const res = await axios.post(
+        `${serverUrl}/api/message/summary`,
+        { messages },
+        { withCredentials: true }
+      );
+      const raw=res.data.summary || "";
+      const cleaned = String(raw)
+      .replace(/\*\*(.*?)\*\*/gs, "$1")        // remove **bold**
+      .replace(/\*(.*?)\*/gs, "$1")            // remove *italic*
+      .replace(/__([^_]+)__/gs, "$1")          // remove __bold__
+      .replace(/_(.*?)_/gs, "$1")              // remove _italic_
+      .replace(/`{1,3}([^`]+)`{1,3}/gs, "$1")  // remove code ticks
+      .trim();
+      
+      setSummary(cleaned);
+      setShowSummary(true);
+    } catch (error) {
+      alert("Failed to summarize messages");
+      console.error("Error summarizing messages:", error);
+    } finally {
+      setSummarizing(false);
     }
   };
 
@@ -305,10 +346,10 @@ const Messages = () => {
     setMessage((prevMessage) => prevMessage + emojiObject.emoji);
   };
 
-    const handleSendMessage = async (e) => {
+  const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!message.trim() && !selectedImage) return;
-  
+
     try {
       const formData = new FormData();
       if (message.trim()) {
@@ -317,7 +358,7 @@ const Messages = () => {
       if (selectedImage) {
         formData.append("images", selectedImage);
       }
-  
+
       if (selectedConversation.isGroupChat) {
         await axios.post(
           `${serverUrl}/api/message/groups/${selectedConversation._id}/messages`,
@@ -337,9 +378,7 @@ const Messages = () => {
           }
         );
       }
-  
-      // Do NOT append the message here!
-      // Just reset the input fields and let the socket event handle UI update.
+
       setMessage("");
       setSelectedImage(null);
       setImagePreview(null);
@@ -347,8 +386,10 @@ const Messages = () => {
       if (imageInputRef.current) {
         imageInputRef.current.value = "";
       }
-      // Optionally scroll to bottom (socket event will also do this)
-      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+      setTimeout(
+        () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }),
+        50
+      );
     } catch (error) {
       console.error("Error sending message:", error);
       alert("Failed to send message");
@@ -479,7 +520,7 @@ const Messages = () => {
 
   return (
     <div className="flex h-screen bg-white text-gray-800">
-      {/* Left Column: Conversation List */}
+      {/* Conversations List - Left Sidebar */}
       <div
         className={`${
           selectedConversation ? "hidden" : "flex"
@@ -504,6 +545,7 @@ const Messages = () => {
             <Plus size={20} />
           </button>
         </div>
+
         <div className="p-4 border-b border-gray-200">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -516,6 +558,7 @@ const Messages = () => {
             />
           </div>
         </div>
+
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
           {loading ? (
             <p className="text-center text-gray-500 mt-4">Loading...</p>
@@ -541,7 +584,7 @@ const Messages = () => {
         </div>
       </div>
 
-      {/* Right Column: Chat Window */}
+      {/* Chat Area - Right Side */}
       <div
         className={`${
           !selectedConversation ? "hidden" : "flex"
@@ -549,9 +592,9 @@ const Messages = () => {
       >
         {selectedConversation ? (
           <>
-            {/* Chat Header */}
+            {/* Chat Header with Summarize Button */}
             <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-white">
-              <div className="flex items-center">
+              <div className="flex items-center flex-1">
                 <button
                   onClick={handleBack}
                   className="p-2 rounded-full hover:bg-gray-100 transition-colors mr-2 md:hidden"
@@ -590,21 +633,36 @@ const Messages = () => {
                   )}
                 </div>
               </div>
-              {selectedConversation.isGroupChat && (
+
+              {/* Header Buttons - Summarize & Settings */}
+              <div className="flex items-center gap-2">
+                {/* Summarize Button with Icon */}
                 <button
-                  onClick={() => setShowGroupSettings(!showGroupSettings)}
-                  className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                  onClick={handleSummarize}
+                  disabled={summarizing || !messages || messages.length === 0}
+                  title="Summarize chat"
+                  className="p-2 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Settings className="w-5 h-5" />
+                  <FileText className="w-5 h-5 text-gray-700" />
                 </button>
-              )}
+
+                {/* Group Settings Button */}
+                {selectedConversation.isGroupChat && (
+                  <button
+                    onClick={() => setShowGroupSettings(!showGroupSettings)}
+                    className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                    title="Group settings"
+                  >
+                    <Settings className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Group Settings Panel */}
             {showGroupSettings && selectedConversation.isGroupChat && (
               <div className="p-4 border-b border-gray-200 bg-gray-50 max-h-64 overflow-y-auto">
                 <h3 className="font-bold mb-3">Group Settings</h3>
-
                 {isGroupAdmin && (
                   <>
                     <div className="mb-3">
@@ -679,7 +737,7 @@ const Messages = () => {
               </div>
             )}
 
-            {/* Messages Area */}
+            {/* Messages Display Area */}
             <div className="flex-1 p-4 overflow-y-auto bg-gray-50">
               {messages && messages.length > 0 ? (
                 messages.map((msg) =>
@@ -721,7 +779,7 @@ const Messages = () => {
               </div>
             )}
 
-            {/* Message Input */}
+            {/* Message Input Form */}
             <form
               onSubmit={handleSendMessage}
               className="p-4 border-t border-gray-200 bg-white"
@@ -738,6 +796,7 @@ const Messages = () => {
                   type="button"
                   onClick={() => imageInputRef.current?.click()}
                   className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                  title="Attach image"
                 >
                   <ImageIcon className="w-5 h-5 text-gray-600" />
                 </button>
@@ -745,6 +804,7 @@ const Messages = () => {
                   type="button"
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                   className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                  title="Add emoji"
                 >
                   <Smile className="w-5 h-5 text-gray-600" />
                 </button>
@@ -759,6 +819,7 @@ const Messages = () => {
                   type="submit"
                   disabled={!message.trim() && !selectedImage}
                   className="p-2 rounded-full bg-purple-600 text-white hover:bg-purple-700 transition-colors disabled:bg-gray-300"
+                  title="Send message"
                 >
                   <Send size={20} />
                 </button>
@@ -773,7 +834,7 @@ const Messages = () => {
         )}
       </div>
 
-      {/* Group Creation Modal */}
+      {/* Create Group Modal */}
       {showGroupModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
           <form
@@ -809,7 +870,9 @@ const Messages = () => {
                             ]);
                           } else {
                             setGroupParticipants(
-                              groupParticipants.filter((id) => id !== user._id)
+                              groupParticipants.filter(
+                                (id) => id !== user._id
+                              )
                             );
                           }
                         }}
@@ -817,7 +880,8 @@ const Messages = () => {
                       />
                       <img
                         src={
-                          user.profileImage || "https://via.placeholder.com/30"
+                          user.profileImage ||
+                          "https://via.placeholder.com/30"
                         }
                         alt={user.name}
                         className="w-6 h-6 rounded-full mr-2"
@@ -843,6 +907,29 @@ const Messages = () => {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Summary Modal */}
+      {showSummary && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-2xl bg-white rounded-lg p-6 max-h-96 flex flex-col shadow-xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-lg">💬 Chat Summary</h3>
+              <button
+                onClick={() => setShowSummary(false)}
+                className="p-1 rounded hover:bg-gray-200 transition-colors"
+                title="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="overflow-y-auto text-sm flex-1 bg-gray-50 p-4 rounded border border-gray-200">
+              <pre className="whitespace-pre-wrap font-sans text-gray-800">
+                {String(summary)}
+              </pre>
+            </div>
+          </div>
         </div>
       )}
     </div>

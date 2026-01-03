@@ -17,6 +17,7 @@ import {
   Smile,
   Image as ImageIcon,
   X,
+  FileText,
 } from "lucide-react";
 import axios from "axios";
 import { AuthDataContext } from "../context/AuthContext";
@@ -85,6 +86,9 @@ const RightHome = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [summary, setSummary] = useState(null);
+  const [showSummary, setShowSummary] = useState(false);
+  const [summarizing, setSummarizing] = useState(false);
 
   const imageInputRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -103,18 +107,15 @@ const RightHome = () => {
     messagesRef.current = messages || [];
   }, [messages]);
 
-  // Check if current chat user is online
   const isCurrentUserOnline =
     selectedConversation && !selectedConversation.isGroupChat
       ? onlineUsers.includes(selectedConversation.participants[0]?._id)
       : false;
 
-  // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // join/leave group room when selection changes
   useEffect(() => {
     if (!socket) return;
     if (selectedConversation?.isGroupChat) {
@@ -158,7 +159,6 @@ const RightHome = () => {
     getConversations();
   }, [serverUrl]);
 
-  // socket listener: append only relevant messages
   useEffect(() => {
     if (!socket) return;
     const handler = (msg) => {
@@ -176,7 +176,6 @@ const RightHome = () => {
           );
         }
       } else {
-        // direct message: check sender/receiver or conversation id
         const otherId = selectedConversation?.participants?.[0]?._id;
         if (!selectedConversation?.isGroupChat && otherId) {
           const senderId = msg.sender?._id || msg.sender;
@@ -262,6 +261,28 @@ const RightHome = () => {
     fetchMessages();
   }, [selectedConversation, serverUrl, dispatch]);
 
+  const handleSummarize = async () => {
+    if (!messages || messages.length === 0) {
+      alert("No messages to summarize");
+      return;
+    }
+    try {
+      setSummarizing(true);
+      const res = await axios.post(
+        `${serverUrl}/api/message/summary`,
+        { messages },
+        { withCredentials: true }
+      );
+      setSummary(res.data.summary || res.data);
+      setShowSummary(true);
+    } catch (err) {
+      console.error("Summary error:", err);
+      alert("Failed to get summary");
+    } finally {
+      setSummarizing(false);
+    }
+  };
+
   const handleBack = () => {
     setSelectedConversation(null);
     setShowGroupSettings(false);
@@ -336,7 +357,7 @@ const RightHome = () => {
       let res;
       if (selectedConversation.isGroupChat) {
         res = await axios.post(
-          `${serverUrl}/api/message/groups/${selectedConversation._id || selectedConversation._id}/messages`,
+          `${serverUrl}/api/message/groups/${selectedConversation._id}/messages`,
           formData,
           {
             withCredentials: true,
@@ -353,7 +374,6 @@ const RightHome = () => {
           }
         );
       }
-      // use messagesRef to avoid stale state
       const newMsg = res.data.newMessage;
       const newList = [...(messagesRef.current || []), newMsg];
       messagesRef.current = newList;
@@ -599,14 +619,25 @@ const RightHome = () => {
                     )}
                   </div>
                 </div>
-                {selectedConversation.isGroupChat && (
+                <div className="flex items-center gap-2">
+                  {/* Summarize Button with Icon */}
                   <button
-                    onClick={() => setShowGroupSettings(!showGroupSettings)}
-                    className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                    onClick={handleSummarize}
+                    disabled={summarizing || !messages || messages.length === 0}
+                    title="Summarize chat"
+                    className="p-2 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50"
                   >
-                    <Settings className="w-5 h-5" />
+                    <FileText className="w-5 h-5 text-gray-700" />
                   </button>
-                )}
+                  {selectedConversation.isGroupChat && (
+                    <button
+                      onClick={() => setShowGroupSettings(!showGroupSettings)}
+                      className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                    >
+                      <Settings className="w-5 h-5" />
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Group Settings Panel */}
@@ -848,6 +879,26 @@ const RightHome = () => {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Summary Modal */}
+      {showSummary && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-2xl bg-white rounded-lg p-4 max-h-96 flex flex-col">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="font-semibold text-lg">Chat Summary</h3>
+              <button
+                onClick={() => setShowSummary(false)}
+                className="p-1 rounded hover:bg-gray-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="overflow-y-auto text-sm flex-1">
+              <pre className="whitespace-pre-wrap font-sans">{String(summary)}</pre>
+            </div>
+          </div>
         </div>
       )}
     </div>

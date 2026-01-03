@@ -1,13 +1,16 @@
+
 import React, { useState, useRef, useContext, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, Smile, Image, X } from "lucide-react";
+import { ArrowLeft, Send, Smile, Image, X, FileText } from "lucide-react";
 import axios from "axios";
 import { AuthDataContext } from "../context/AuthContext";
 import { setMessages } from "../redux/messageSlice.js";
 import SenderMessage from "./SenderMessage.jsx";
 import ReceiverMessage from "./ReceiverMessage.jsx";
 import { SocketDataContext } from "../context/SocketContext";
+import EmojiPicker from "emoji-picker-react";
+
 const MessageArea = () => {
   const navigate = useNavigate();
   const { selectedUser, messages } = useSelector((state) => state.message);
@@ -16,9 +19,24 @@ const MessageArea = () => {
   const [message, setMessage] = useState("");
   const [frontendImage, setFrontendImage] = useState(null);
   const [backendImage, setBackendImage] = useState(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [summary, setSummary] = useState(null);
+  const [showSummary, setShowSummary] = useState(false);
+  const [summarizing, setSummarizing] = useState(false);
   const imageInputRef = useRef(null);
+  const messagesEndRef = useRef(null);
+  const messagesRef = useRef(messages || []);
   const dispatch = useDispatch();
   const { serverUrl } = useContext(AuthDataContext);
+
+  useEffect(() => {
+    messagesRef.current = messages || [];
+  }, [messages]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
   const handleImage = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -31,9 +49,10 @@ const MessageArea = () => {
     setFrontendImage(null);
     setBackendImage(null);
     if (imageInputRef.current) {
-      imageInputRef.current.value = ""; // Reset file input
+      imageInputRef.current.value = "";
     }
   };
+
   const getAllMessages = async () => {
     try {
       const result = await axios.get(
@@ -41,37 +60,70 @@ const MessageArea = () => {
         { withCredentials: true }
       );
       dispatch(setMessages(result.data.newMessage));
-      
     } catch (error) {
       console.error("Error fetching messages:", error);
     }
   };
+
   useEffect(() => {
     if (selectedUser) {
       getAllMessages();
     }
   }, [selectedUser]);
-  useEffect(()=>{
-    if(socket){
-      socket.on("newMessage",(mess)=>{
-        dispatch(setMessages([...(messages||[]),mess]));
-      })
-    }
-    return () => {
-      if (socket) {
-        socket.off("newMessage");
-      }
-    };
-  },[messages,socket,setMessages])
 
+  useEffect(() => {
+    if (socket) {
+      const handler = (mess) => {
+        const newList = [...(messagesRef.current || []), mess];
+        messagesRef.current = newList;
+        dispatch(setMessages(newList));
+        setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 30);
+      };
+      socket.on("newMessage", handler);
+      return () => {
+        socket.off("newMessage", handler);
+      };
+    }
+  }, [socket, dispatch]);
+
+  const handleSummarize = async () => {
+    if (!messages || messages.length === 0) {
+      alert("No messages to summarize");
+      return;
+    }
+    try {
+      setSummarizing(true);
+      const res = await axios.post(
+        `${serverUrl}/api/message/summary`,
+        { messages },
+        { withCredentials: true }
+      );
+      setSummary(res.data.summary || res.data);
+      setShowSummary(true);
+    } catch (err) {
+      console.error("Summary error:", err);
+      alert("Failed to summarize messages");
+    } finally {
+      setSummarizing(false);
+    }
+  };
+
+  const handleEmojiClick = (emojiObject) => {
+    setMessage((prevMessage) => prevMessage + emojiObject.emoji);
+  };
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
+    if (!message.trim() && !backendImage) return;
+
     const formData = new FormData();
     if (backendImage) {
       formData.append("images", backendImage);
     }
-    formData.append("message", message);
+    if (message.trim()) {
+      formData.append("message", message);
+    }
+
     try {
       const result = await axios.post(
         `${serverUrl}/api/message/send/${selectedUser._id}`,
@@ -81,15 +133,18 @@ const MessageArea = () => {
           withCredentials: true,
         }
       );
-      // Update messages in the Redux store
 
-     
-      dispatch(setMessages([...(messages || []), result.data.newMessage]));
+      const newList = [...(messagesRef.current || []), result.data.newMessage];
+      messagesRef.current = newList;
+      dispatch(setMessages(newList));
 
       setMessage("");
       handleRemoveImage();
+      setShowEmojiPicker(false);
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
     } catch (error) {
       console.error("Error sending message:", error);
+      alert("Failed to send message");
     }
   };
 
@@ -111,36 +166,51 @@ const MessageArea = () => {
 
   return (
     <div className="flex flex-col h-screen bg-white text-gray-800">
-      <div className="flex items-center p-3 border-b border-gray-200 bg-white sticky top-0 z-10">
-        <button
-          onClick={() => navigate(-1)}
-          className="p-2 rounded-full hover:bg-gray-100 transition-colors mr-2"
-          aria-label="Go back"
-        >
-          <ArrowLeft className="w-6 h-6" />
-        </button>
-        <img
-          src={selectedUser.profileImage || "https://via.placeholder.com/40"}
-          alt={`${selectedUser.name}'s profile`}
-          className="w-10 h-10 rounded-full object-cover"
-        />
-        <div className="ml-3">
-          <h2 className="font-semibold text-lg">{selectedUser.name}</h2>
-          <p className="text-sm text-gray-500">@{selectedUser.userName}</p>
+      {/* Header */}
+      <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-white sticky top-0 z-10">
+        <div className="flex items-center">
+          <button
+            onClick={() => navigate(-1)}
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors mr-2"
+            aria-label="Go back"
+          >
+            <ArrowLeft className="w-6 h-6" />
+          </button>
+          <img
+            src={selectedUser.profileImage || "https://via.placeholder.com/40"}
+            alt={`${selectedUser.name}'s profile`}
+            className="w-10 h-10 rounded-full object-cover"
+          />
+          <div className="ml-3">
+            <h2 className="font-semibold text-lg">{selectedUser.name}</h2>
+            <p className="text-sm text-gray-500">@{selectedUser.userName}</p>
+          </div>
         </div>
+        {/* Summarize Button */}
+        <button
+          onClick={handleSummarize}
+          disabled={summarizing || !messages || messages.length === 0}
+          title="Summarize chat"
+          className="p-2 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50"
+        >
+          <FileText className="w-5 h-5 text-gray-700" />
+        </button>
       </div>
+
+      {/* Messages Area */}
       <div className="flex-1 p-4 overflow-y-auto bg-gray-50">
         {messages &&
           messages.map((msg) => {
-            // Add the 'return' keyword here
             return msg.sender?._id === userData._id ? (
               <SenderMessage message={msg} key={msg._id} />
             ) : (
               <ReceiverMessage message={msg} key={msg._id} />
             );
           })}
+        <div ref={messagesEndRef} />
       </div>
-      .
+
+      {/* Input Area */}
       <div className="border-t border-gray-200 bg-white">
         {frontendImage && (
           <div className="p-4 relative w-fit">
@@ -156,6 +226,12 @@ const MessageArea = () => {
               alt="Selected preview"
               className="h-24 w-auto rounded-lg"
             />
+          </div>
+        )}
+
+        {showEmojiPicker && (
+          <div className="p-2 border-b border-gray-200 bg-gray-50">
+            <EmojiPicker onEmojiClick={handleEmojiClick} />
           </div>
         )}
 
@@ -180,6 +256,7 @@ const MessageArea = () => {
             />
             <button
               type="button"
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
               className="absolute right-3 p-1 text-gray-500 hover:text-purple-600 transition-colors"
               aria-label="Add emoji"
             >
@@ -204,6 +281,26 @@ const MessageArea = () => {
           </button>
         </form>
       </div>
+
+      {/* Summary Modal */}
+      {showSummary && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-2xl bg-white rounded-lg p-4 max-h-96 flex flex-col">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="font-semibold text-lg">Chat Summary</h3>
+              <button
+                onClick={() => setShowSummary(false)}
+                className="p-1 rounded hover:bg-gray-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="overflow-y-auto text-sm flex-1">
+              <pre className="whitespace-pre-wrap font-sans">{String(summary)}</pre>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

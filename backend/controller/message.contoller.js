@@ -3,6 +3,7 @@ import Message from "../models/message.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import User from "../models/user.model.js";
 import { getSocketId, io } from "../socket.js";
+import axios from "axios";
 const sendMessage = async (req, res) => {
   try {
     const sender = req.userId;
@@ -394,6 +395,66 @@ const deletegrp = async (req, res) => {
   }
 };
 
+const chatSummary = async (req, res) => {
+  try {
+    const { messages } = req.body;
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "Messages array is required for summary." });
+    }
+    const chat = messages
+      .map(
+        (msg) => `Sender: ${msg.sender?.name || msg.sender?._id || "Unknown"}
+Message: ${msg.message || "Image Message"}
+`
+      )
+      .join("\n");
+    const prompt = `You are an AI  Chat Summarizer.
+
+Your job is to analyze a conversation and produce a clear, structured summary for humans.
+
+Always output in this format:
+
+1. 🧾 Conversation Summary
+- 2–4 sentences explaining what the discussion was about.
+
+2. 📌 Key Decisions
+- Bullet points of any decisions, agreements, or conclusions.
+- If none, say "No final decisions were made."
+
+3. 📝 Action Items
+- Bullet list of tasks with:
+  • Who
+  • What
+  • Deadline (if mentioned)
+- If no tasks, say "No action items were assigned."
+
+4. ⚠️ Open Questions / Risks
+- Anything unresolved, unclear, or risky.
+
+Rules:
+- Do NOT repeat the chat.
+- Do NOT quote people.
+- Be concise and professional.
+- Focus on what matters, not every message.
+
+these are the messages:
+${chat}
+`;
+
+    const response = await axios.post("http://localhost:11434/api/generate", {
+      model: "gpt-oss:120b-cloud",
+      prompt: prompt,
+      stream: false,
+    });
+
+    res.status(200).json({ summary: response.data.response });
+  } catch (error) {
+    console.error("chatSummary error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 export {
   sendMessage,
   getMessages,
@@ -407,4 +468,5 @@ export {
   demoteAdmin,
   leaveGroup,
   deletegrp,
+  chatSummary,
 };

@@ -12,6 +12,7 @@ import {
   demoteAdmin,
   leaveGroup,
   deletegrp,
+  chatSummary,
 } from "../controller/message.contoller.js";
 import isAuth from "../middleware/auth.middleware.js";
 import upload from "../middleware/multer.middleware.js";
@@ -26,7 +27,7 @@ MessageRouter.post(
 ); // Send a direct message
 MessageRouter.get("/messages/:receiver", isAuth, getMessages); // Get messages with a specific user
 MessageRouter.get("/chats", isAuth, getPrevUserChats); // Get previous user chats
-
+MessageRouter.post("/summary", isAuth, chatSummary); // Get chat summary
 // Group Chats
 MessageRouter.post("/groups", isAuth, createGroupChat); // Create a new group chat
 MessageRouter.post(
