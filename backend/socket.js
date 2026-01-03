@@ -7,7 +7,9 @@ const server = http.createServer(app);//quick http server creation using express
 
 const io=new Server(server,{
   cors:{
-    origin:"http://localhost:5173",//frontend server
+    origin:["http://localhost:5173",//frontend server
+    "https://vibeshare-hj0f.onrender.com"
+  ],
     methods:["GET","POST","PATCH","DELETE"]
   }
 });//socket io server creation
